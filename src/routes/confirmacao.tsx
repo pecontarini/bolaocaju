@@ -41,21 +41,27 @@ function ConfirmacaoPage() {
           Seu palpite foi salvo com sucesso.
         </p>
 
-        <div className="mt-6 w-full rounded-2xl bg-card border-2 border-cl-verde shadow-sm p-5">
-          <p className="text-xs uppercase tracking-wide text-cl-cinza-texto">
+        <div className="mt-6 w-full rounded-2xl bg-card border-2 border-cl-verde shadow-sm p-5 text-center">
+          <p className="text-[11px] uppercase tracking-wider text-cl-cinza-texto">
             Seu palpite
           </p>
-          <p className="font-display text-2xl text-cl-verde-escuro mt-1">
-            {palpite.time_a}{" "}
-            <span className="text-cl-laranja">{palpite.placar_a}</span>{" "}
-            <span className="text-cl-cinza-texto">x</span>{" "}
-            <span className="text-cl-laranja">{palpite.placar_b}</span>{" "}
+          <p className="font-display text-cl-verde-escuro text-base mt-2 truncate">
+            {palpite.time_a} <span className="text-cl-cinza-texto">×</span>{" "}
             {palpite.time_b}
           </p>
+          <div className="mt-3 flex justify-center">
+            <span className="placar-chip text-4xl px-5 py-2">
+              <span>{palpite.placar_a}</span>
+              <span className="x">×</span>
+              <span>{palpite.placar_b}</span>
+            </span>
+          </div>
           {palpite.comanda != null && (
-            <p className="text-xs text-cl-cinza-texto mt-2">
-              Comanda{" "}
-              <span className="font-display text-cl-verde-escuro text-base">
+            <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-cl-laranja/20 border border-cl-laranja/40 px-3 py-1">
+              <span className="text-[10px] uppercase tracking-wider text-cl-cinza-texto">
+                Comanda
+              </span>
+              <span className="font-display text-cl-verde-escuro text-base tabular">
                 #{palpite.comanda}
               </span>
             </p>
