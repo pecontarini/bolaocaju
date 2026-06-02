@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Minus, Plus, MapPin, Loader2, Receipt, Info } from "lucide-react";
+import { Minus, Plus, MapPin, Loader2, Receipt, Info, ArrowLeft } from "lucide-react";
 
 import { LayoutCliente } from "@/components/site/LayoutCliente";
 import { Button } from "@/components/ui/button";
@@ -14,8 +14,8 @@ import { Bandeira } from "@/components/jogos/Bandeira";
 const COLUNAS =
   "id,numero_jogo,fase,grupo,data_hora_inicio,time_a,codigo_a,time_b,codigo_b,estadio,cidade,pais_sede,status,placar_a,placar_b,palpites_encerrados,premio_descricao,premio_imagem_url,envolve_brasil";
 
-export const Route = createFileRoute("/palpitar")({
-  component: PalpitarPage,
+export const Route = createFileRoute("/palpitar/$jogoId")({
+  component: PalpitarJogoPage,
 });
 
 type GeoState =
@@ -24,38 +24,36 @@ type GeoState =
   | { status: "ok"; latitude: number; longitude: number }
   | { status: "error"; mensagem: string };
 
-function PalpitarPage() {
+function PalpitarJogoPage() {
+  const { jogoId } = Route.useParams();
   const navigate = useNavigate();
   const cliente_id = useCliente((s) => s.cliente_id);
   const nome = useCliente((s) => s.nome);
   const setUltimoPalpite = useCliente((s) => s.setUltimoPalpite);
 
-  const jogoAtivo = useQuery({
-    queryKey: ["jogo-ativo"],
+  const jogoQ = useQuery({
+    queryKey: ["jogo-palpite", jogoId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("jogos")
         .select(COLUNAS)
-        .eq("status", "ativo")
-        .order("data_hora_inicio", { ascending: true })
-        .limit(1)
+        .eq("id", jogoId)
         .maybeSingle();
       if (error) throw error;
-      return data as Jogo | null;
+      return (data ?? null) as Jogo | null;
     },
     refetchInterval: 30_000,
   });
 
-  // redireciona pro cadastro se não tem cliente
   useEffect(() => {
     if (!cliente_id) {
       navigate({
         to: "/cadastro",
-        search: { next: "/palpitar" },
+        search: { next: `/palpitar/${jogoId}` },
         replace: true,
       });
     }
-  }, [cliente_id, navigate]);
+  }, [cliente_id, navigate, jogoId]);
 
   const [placarA, setPlacarA] = useState(0);
   const [placarB, setPlacarB] = useState(0);
@@ -69,6 +67,9 @@ function PalpitarPage() {
     Number.isInteger(comandaNum) &&
     comandaNum >= 1 &&
     comandaNum <= 9999;
+
+  const jogo = jogoQ.data;
+  const jogoAberto = jogo?.status === "ativo";
 
   function pedirGeo() {
     if (!("geolocation" in navigator)) {
@@ -98,13 +99,13 @@ function PalpitarPage() {
   }
 
   useEffect(() => {
-    if (cliente_id && geo.status === "idle" && jogoAtivo.data) {
+    if (cliente_id && geo.status === "idle" && jogoAberto) {
       pedirGeo();
     }
-  }, [cliente_id, geo.status, jogoAtivo.data]);
+  }, [cliente_id, geo.status, jogoAberto]);
 
   async function confirmar() {
-    if (!jogoAtivo.data || !cliente_id || geo.status !== "ok" || enviando) return;
+    if (!jogo || !cliente_id || geo.status !== "ok" || enviando) return;
     if (!comandaValida) {
       toast.error("Informe o número da comanda (1 a 9999).");
       return;
@@ -112,7 +113,7 @@ function PalpitarPage() {
     setEnviando(true);
     try {
       const { error } = await supabase.from("palpites").insert({
-        jogo_id: jogoAtivo.data.id,
+        jogo_id: jogo.id,
         cliente_id,
         placar_a: placarA,
         placar_b: placarB,
@@ -141,9 +142,9 @@ function PalpitarPage() {
         return;
       }
       setUltimoPalpite({
-        jogo_id: jogoAtivo.data.id,
-        time_a: jogoAtivo.data.time_a,
-        time_b: jogoAtivo.data.time_b,
+        jogo_id: jogo.id,
+        time_a: jogo.time_a,
+        time_b: jogo.time_b,
         placar_a: placarA,
         placar_b: placarB,
         comanda: comandaNum,
@@ -154,7 +155,7 @@ function PalpitarPage() {
     }
   }
 
-  if (jogoAtivo.isLoading || !cliente_id) {
+  if (jogoQ.isLoading || !cliente_id) {
     return (
       <LayoutCliente>
         <div className="py-16 text-center text-cl-cinza-texto flex flex-col items-center gap-2">
@@ -165,15 +166,30 @@ function PalpitarPage() {
     );
   }
 
-  if (!jogoAtivo.data) {
+  if (!jogo) {
     return (
       <LayoutCliente>
         <div className="rounded-2xl bg-card border-2 border-dashed border-cl-verde/40 p-8 text-center">
           <p className="font-display text-xl text-cl-verde-escuro">
-            Nenhum jogo aberto agora
+            Jogo não encontrado
+          </p>
+          <Button asChild className="mt-4 bg-cl-verde hover:bg-cl-verde-escuro text-white">
+            <Link to="/">Voltar pro início</Link>
+          </Button>
+        </div>
+      </LayoutCliente>
+    );
+  }
+
+  if (!jogoAberto) {
+    return (
+      <LayoutCliente>
+        <div className="rounded-2xl bg-card border-2 border-dashed border-cl-verde/40 p-8 text-center">
+          <p className="font-display text-xl text-cl-verde-escuro">
+            Este jogo não está aberto para palpites
           </p>
           <p className="text-sm text-cl-cinza-texto mt-2">
-            Quando o próximo bolão abrir, ele aparece aqui na hora.
+            {jogo.time_a} × {jogo.time_b}
           </p>
           <Button
             asChild
@@ -186,10 +202,15 @@ function PalpitarPage() {
     );
   }
 
-  const jogo = jogoAtivo.data;
-
   return (
     <LayoutCliente>
+      <Link
+        to="/"
+        className="inline-flex items-center gap-1 text-sm text-cl-verde-escuro mb-3"
+      >
+        <ArrowLeft className="size-4" /> Jogos abertos
+      </Link>
+
       <div className="flex items-start justify-between mb-2">
         <div>
           <p className="text-xs text-cl-cinza-texto uppercase tracking-wide">
@@ -208,9 +229,7 @@ function PalpitarPage() {
 
       <p className="font-display text-cl-laranja text-2xl mb-4">É a hora!</p>
 
-      {geo.status !== "ok" && (
-        <GeoBloco geo={geo} onTentar={pedirGeo} />
-      )}
+      {geo.status !== "ok" && <GeoBloco geo={geo} onTentar={pedirGeo} />}
 
       <section className="rounded-2xl bg-card border-2 border-cl-verde shadow-sm overflow-hidden mb-4">
         <div className="bg-cl-verde text-white px-4 py-2 text-center">
@@ -267,7 +286,9 @@ function PalpitarPage() {
           max={9999}
           step={1}
           value={comandaStr}
-          onChange={(e) => setComandaStr(e.target.value.replace(/\D/g, "").slice(0, 4))}
+          onChange={(e) =>
+            setComandaStr(e.target.value.replace(/\D/g, "").slice(0, 4))
+          }
           placeholder="Ex.: 27"
           disabled={geo.status !== "ok"}
           className="mt-3 w-full h-14 rounded-xl bg-white border border-cl-verde/30 text-center text-3xl font-display tabular-nums text-cl-verde-escuro focus:outline-none focus:ring-2 focus:ring-cl-verde disabled:opacity-50"

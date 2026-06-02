@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import {
   ArrowLeft,
   Loader2,
-  Play,
   Trophy,
   Save,
   CheckCircle2,
@@ -165,9 +164,10 @@ function DetalheJogoPage() {
   }
 
   const jogo = jogoQ.data;
-  const podeAtivar = jogo.status === "habilitado" || jogo.status === "agendado";
   const podeLancarPlacar =
-    jogo.status === "ativo" || jogo.status === "palpites_encerrados";
+    jogo.status === "ativo" ||
+    jogo.status === "palpites_encerrados" ||
+    jogo.status === "encerrado";
   const placarLancado = jogo.placar_a !== null && jogo.placar_b !== null;
   const jaEncerrado = jogo.status === "encerrado";
   const podeApurar = placarLancado && !jaEncerrado;
@@ -241,14 +241,6 @@ function DetalheJogoPage() {
 
       {/* Ações em ordem */}
       <div className="space-y-5">
-        {podeAtivar && (
-          <AcaoAtivar
-            jogo={jogo}
-            userId={userId}
-            onDone={invalidarTudo}
-          />
-        )}
-
         {!jaEncerrado && (
           <AcaoPremio jogo={jogo} onDone={invalidarTudo} />
         )}
@@ -292,92 +284,6 @@ function TimeBox({ nome, codigo }: { nome: string; codigo: string | null }) {
         {nome}
       </p>
     </div>
-  );
-}
-
-/* ===== AÇÃO: ATIVAR ===== */
-function AcaoAtivar({
-  jogo,
-  userId,
-  onDone,
-}: {
-  jogo: Jogo;
-  userId: string | null;
-  onDone: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  async function ativar() {
-    if (!userId) return;
-    setLoading(true);
-    const { error } = await supabase.rpc("fn_ativar_jogo", {
-      p_jogo_id: jogo.id,
-      p_usuario_id: userId,
-    });
-    setLoading(false);
-    if (error) {
-      toast.error(traduzirErro(error.message, "Não consegui ativar o bolão agora."));
-      return;
-    }
-    toast.success("Bolão ativado!");
-    setOpen(false);
-    onDone();
-  }
-
-  return (
-    <>
-      <section className="glass rounded-3xl p-5">
-        <Cabecalho icon={<Play className="size-5" />} titulo="Ativar bolão" passo={1} />
-        <p className="text-sm text-cl-cinza-texto mb-3">
-          Abre o bolão deste jogo pros clientes palpitarem. Só um jogo pode estar
-          ativo por vez.
-        </p>
-        <Button
-          onClick={() => setOpen(true)}
-          className="w-full h-12 bg-cl-verde hover:bg-cl-verde-escuro text-white text-base font-semibold"
-        >
-          <Play className="size-4 mr-2" /> Ativar bolão deste jogo
-        </Button>
-      </section>
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="font-display text-cl-verde-escuro">
-              Ativar o bolão?
-            </DialogTitle>
-            <DialogDescription>
-              Ativar o bolão de <strong>{jogo.time_a}</strong> x{" "}
-              <strong>{jogo.time_b}</strong>? Isso encerra qualquer outro jogo
-              ativo no momento.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={loading}
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={ativar}
-              disabled={loading}
-              className="bg-cl-verde hover:bg-cl-verde-escuro text-white"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="size-4 mr-2 animate-spin" /> Ativando…
-                </>
-              ) : (
-                "Sim, ativar"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
   );
 }
 
