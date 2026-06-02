@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SobreCopaRouteImport } from './routes/sobre-copa'
 import { Route as PalpitarRouteImport } from './routes/palpitar'
 import { Route as MeusPalpitesRouteImport } from './routes/meus-palpites'
+import { Route as ConfirmacaoRouteImport } from './routes/confirmacao'
 import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -30,6 +31,11 @@ const MeusPalpitesRoute = MeusPalpitesRouteImport.update({
   path: '/meus-palpites',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConfirmacaoRoute = ConfirmacaoRouteImport.update({
+  id: '/confirmacao',
+  path: '/confirmacao',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CadastroRoute = CadastroRouteImport.update({
   id: '/cadastro',
   path: '/cadastro',
@@ -44,6 +50,7 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/cadastro': typeof CadastroRoute
+  '/confirmacao': typeof ConfirmacaoRoute
   '/meus-palpites': typeof MeusPalpitesRoute
   '/palpitar': typeof PalpitarRoute
   '/sobre-copa': typeof SobreCopaRoute
@@ -51,6 +58,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/cadastro': typeof CadastroRoute
+  '/confirmacao': typeof ConfirmacaoRoute
   '/meus-palpites': typeof MeusPalpitesRoute
   '/palpitar': typeof PalpitarRoute
   '/sobre-copa': typeof SobreCopaRoute
@@ -59,19 +67,33 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/cadastro': typeof CadastroRoute
+  '/confirmacao': typeof ConfirmacaoRoute
   '/meus-palpites': typeof MeusPalpitesRoute
   '/palpitar': typeof PalpitarRoute
   '/sobre-copa': typeof SobreCopaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/cadastro' | '/meus-palpites' | '/palpitar' | '/sobre-copa'
+  fullPaths:
+    | '/'
+    | '/cadastro'
+    | '/confirmacao'
+    | '/meus-palpites'
+    | '/palpitar'
+    | '/sobre-copa'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/cadastro' | '/meus-palpites' | '/palpitar' | '/sobre-copa'
+  to:
+    | '/'
+    | '/cadastro'
+    | '/confirmacao'
+    | '/meus-palpites'
+    | '/palpitar'
+    | '/sobre-copa'
   id:
     | '__root__'
     | '/'
     | '/cadastro'
+    | '/confirmacao'
     | '/meus-palpites'
     | '/palpitar'
     | '/sobre-copa'
@@ -80,6 +102,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CadastroRoute: typeof CadastroRoute
+  ConfirmacaoRoute: typeof ConfirmacaoRoute
   MeusPalpitesRoute: typeof MeusPalpitesRoute
   PalpitarRoute: typeof PalpitarRoute
   SobreCopaRoute: typeof SobreCopaRoute
@@ -108,6 +131,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MeusPalpitesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/confirmacao': {
+      id: '/confirmacao'
+      path: '/confirmacao'
+      fullPath: '/confirmacao'
+      preLoaderRoute: typeof ConfirmacaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/cadastro': {
       id: '/cadastro'
       path: '/cadastro'
@@ -128,6 +158,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CadastroRoute: CadastroRoute,
+  ConfirmacaoRoute: ConfirmacaoRoute,
   MeusPalpitesRoute: MeusPalpitesRoute,
   PalpitarRoute: PalpitarRoute,
   SobreCopaRoute: SobreCopaRoute,
