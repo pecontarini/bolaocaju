@@ -59,9 +59,9 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const PalpitarJogoIdRoute = PalpitarJogoIdRouteImport.update({
-  id: '/$jogoId',
-  path: '/$jogoId',
-  getParentRoute: () => PalpitarRoute,
+  id: '/palpitar/$jogoId',
+  path: '/palpitar/$jogoId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
   id: '/admin/usuarios',
@@ -193,6 +193,7 @@ export interface RootRouteChildren {
   AdminLoginRoute: typeof AdminLoginRoute
   AdminSorteiosRoute: typeof AdminSorteiosRoute
   AdminUsuariosRoute: typeof AdminUsuariosRoute
+  PalpitarJogoIdRoute: typeof PalpitarJogoIdRoute
   AdminIndexRoute: typeof AdminIndexRoute
   PalpitarIndexRoute: typeof PalpitarIndexRoute
   AdminJogoIdRoute: typeof AdminJogoIdRoute
@@ -251,10 +252,10 @@ declare module '@tanstack/react-router' {
     }
     '/palpitar/$jogoId': {
       id: '/palpitar/$jogoId'
-      path: '/$jogoId'
+      path: '/palpitar/$jogoId'
       fullPath: '/palpitar/$jogoId'
       preLoaderRoute: typeof PalpitarJogoIdRouteImport
-      parentRoute: typeof PalpitarRoute
+      parentRoute: typeof rootRouteImport
     }
     '/admin/usuarios': {
       id: '/admin/usuarios'
@@ -304,6 +305,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminLoginRoute: AdminLoginRoute,
   AdminSorteiosRoute: AdminSorteiosRoute,
   AdminUsuariosRoute: AdminUsuariosRoute,
+  PalpitarJogoIdRoute: PalpitarJogoIdRoute,
   AdminIndexRoute: AdminIndexRoute,
   PalpitarIndexRoute: PalpitarIndexRoute,
   AdminJogoIdRoute: AdminJogoIdRoute,
@@ -311,13 +313,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
