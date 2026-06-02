@@ -1,7 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { type Jogo, bandeiraEmoji, formatarDataJogo } from "@/lib/jogos";
+import { type Jogo, formatarDataJogo } from "@/lib/jogos";
+import { Bandeira } from "./Bandeira";
 
 export function CardJogoMomento({ jogo }: { jogo: Jogo }) {
   const podePalpitar = !jogo.palpites_encerrados;
@@ -70,8 +71,8 @@ export function CardJogoMomento({ jogo }: { jogo: Jogo }) {
 function TimeBlock({ nome, codigo }: { nome: string; codigo: string | null }) {
   return (
     <div className="bg-cl-verde-claro/60 rounded-xl py-3 px-2">
-      <div className="text-3xl leading-none" aria-hidden>
-        {bandeiraEmoji(codigo)}
+      <div className="flex justify-center">
+        <Bandeira codigo={codigo} tamanho={32} />
       </div>
       <div className="mt-1 text-xs font-semibold text-cl-verde-escuro uppercase tracking-wide">
         {codigo ?? ""}

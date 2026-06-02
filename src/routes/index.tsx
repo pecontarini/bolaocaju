@@ -8,6 +8,7 @@ import {
   ListaResultados,
 } from "@/components/jogos/ListaJogos";
 import { FaixaAzulejos } from "@/components/site/FaixaAzulejos";
+import { BannerCopa } from "@/components/site/BannerCopa";
 import type { Jogo } from "@/lib/jogos";
 
 export const Route = createFileRoute("/")({
@@ -74,9 +75,48 @@ function HomeCliente() {
     },
   });
 
+  const proximoGeral = useQuery({
+    queryKey: ["proximo-jogo-banner"],
+    queryFn: async () => {
+      const agora = new Date().toISOString();
+      const { data, error } = await supabase
+        .from("jogos")
+        .select(COLUNAS)
+        .neq("status", "encerrado")
+        .gte("data_hora_inicio", agora)
+        .order("data_hora_inicio", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return (data ?? null) as Jogo | null;
+    },
+    refetchInterval: 60_000,
+  });
+
+  const totalEncerrados = useQuery({
+    queryKey: ["total-encerrados"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("jogos")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "encerrado");
+      if (error) throw error;
+      return count ?? 0;
+    },
+    refetchInterval: 60_000,
+  });
+
   return (
     <LayoutCliente>
       <h1 className="sr-only">Bolão Caju Limão</h1>
+
+      {/* Banner Copa */}
+      <div className="mb-5">
+        <BannerCopa
+          proximo={proximoGeral.data ?? null}
+          encerrados={totalEncerrados.data ?? 0}
+        />
+      </div>
 
       {/* Saudação enxuta */}
       <div className="mb-4">

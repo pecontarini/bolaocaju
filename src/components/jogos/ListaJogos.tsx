@@ -1,4 +1,5 @@
-import { type Jogo, bandeiraEmoji, formatarDiaCurto } from "@/lib/jogos";
+import { type Jogo, formatarDiaCurto } from "@/lib/jogos";
+import { Bandeira } from "./Bandeira";
 
 export function ListaProximos({ jogos }: { jogos: Jogo[] }) {
   if (!jogos.length) {
@@ -16,7 +17,7 @@ export function ListaProximos({ jogos }: { jogos: Jogo[] }) {
             {formatarDiaCurto(j.data_hora_inicio)}
           </div>
           <div className="flex-1 min-w-0 flex items-center gap-2">
-            <span aria-hidden>{bandeiraEmoji(j.codigo_a)}</span>
+            <Bandeira codigo={j.codigo_a} tamanho={18} />
             <span className="text-sm font-medium text-cl-verde-escuro truncate">
               {j.time_a}
             </span>
@@ -24,7 +25,7 @@ export function ListaProximos({ jogos }: { jogos: Jogo[] }) {
             <span className="text-sm font-medium text-cl-verde-escuro truncate">
               {j.time_b}
             </span>
-            <span aria-hidden>{bandeiraEmoji(j.codigo_b)}</span>
+            <Bandeira codigo={j.codigo_b} tamanho={18} />
           </div>
         </li>
       ))}
@@ -44,7 +45,7 @@ export function ListaResultados({ jogos }: { jogos: Jogo[] }) {
             {formatarDiaCurto(j.data_hora_inicio)}
           </div>
           <div className="flex-1 min-w-0 flex items-center gap-1.5">
-            <span aria-hidden>{bandeiraEmoji(j.codigo_a)}</span>
+            <Bandeira codigo={j.codigo_a} tamanho={18} />
             <span className="text-sm font-medium text-cl-verde-escuro truncate">
               {j.codigo_a ?? j.time_a}
             </span>
@@ -57,7 +58,7 @@ export function ListaResultados({ jogos }: { jogos: Jogo[] }) {
             <span className="text-sm font-medium text-cl-verde-escuro truncate">
               {j.codigo_b ?? j.time_b}
             </span>
-            <span aria-hidden>{bandeiraEmoji(j.codigo_b)}</span>
+            <Bandeira codigo={j.codigo_b} tamanho={18} />
           </div>
         </li>
       ))}
