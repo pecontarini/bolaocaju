@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import {
   ArrowLeft,
   Loader2,
-  Play,
   Trophy,
   Save,
   CheckCircle2,
@@ -165,9 +164,10 @@ function DetalheJogoPage() {
   }
 
   const jogo = jogoQ.data;
-  const podeAtivar = jogo.status === "habilitado" || jogo.status === "agendado";
   const podeLancarPlacar =
-    jogo.status === "ativo" || jogo.status === "palpites_encerrados";
+    jogo.status === "ativo" ||
+    jogo.status === "palpites_encerrados" ||
+    jogo.status === "encerrado";
   const placarLancado = jogo.placar_a !== null && jogo.placar_b !== null;
   const jaEncerrado = jogo.status === "encerrado";
   const podeApurar = placarLancado && !jaEncerrado;
@@ -241,14 +241,6 @@ function DetalheJogoPage() {
 
       {/* Ações em ordem */}
       <div className="space-y-5">
-        {podeAtivar && (
-          <AcaoAtivar
-            jogo={jogo}
-            userId={userId}
-            onDone={invalidarTudo}
-          />
-        )}
-
         {!jaEncerrado && (
           <AcaoPremio jogo={jogo} onDone={invalidarTudo} />
         )}
