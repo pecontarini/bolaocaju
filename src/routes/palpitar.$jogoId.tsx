@@ -216,18 +216,18 @@ function PalpitarJogoPage() {
           <p className="text-xs text-cl-cinza-texto uppercase tracking-wide">
             Olá,
           </p>
-          <p className="font-display text-cl-verde-escuro text-xl leading-tight">
+          <p className="font-display text-cl-verde-escuro text-xl leading-tight truncate max-w-[220px]">
             {nome}
           </p>
         </div>
         <img
           src="/assets/09-selo-laranja.png"
           alt="É a hora!"
-          className="size-20 -mt-2 -mr-1"
+          className="size-14 sm:size-20 -mt-1 -mr-1 shrink-0"
         />
       </div>
 
-      <p className="font-display text-cl-laranja text-2xl mb-4">É a hora!</p>
+      <p className="font-display text-cl-laranja text-xl sm:text-2xl mb-4">É a hora!</p>
 
       {geo.status !== "ok" && <GeoBloco geo={geo} onTentar={pedirGeo} />}
 
@@ -303,7 +303,7 @@ function PalpitarJogoPage() {
 
       <RegrasBolao />
 
-      <div className="sticky bottom-3 pt-2">
+      <div className="sticky bottom-0 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] -mx-4 px-4 bg-gradient-to-t from-cl-cinza-bg via-cl-cinza-bg/90 to-transparent">
         <Button
           onClick={confirmar}
           disabled={geo.status !== "ok" || enviando || !comandaValida}

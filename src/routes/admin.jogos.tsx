@@ -146,7 +146,7 @@ function ListaJogosPage() {
           {filtrados.map((j) => (
             <li
               key={j.id}
-              className="px-4 py-3 flex items-center gap-3 hover:bg-cl-verde/5 transition-colors"
+              className="px-3 sm:px-4 py-3 flex items-center gap-2 sm:gap-3 hover:bg-cl-verde/5 transition-colors"
             >
               <div className="w-10 text-center font-display text-cl-cinza-texto text-sm tabular-nums shrink-0">
                 #{j.numero_jogo}
@@ -163,29 +163,31 @@ function ListaJogosPage() {
                   timeZone: "America/Sao_Paulo",
                 })}
               </div>
-              <div className="flex-1 min-w-0 flex items-center gap-2">
-                <Bandeira codigo={j.codigo_a} tamanho={18} />
-                <span className="text-sm text-cl-verde-escuro truncate">
-                  {j.codigo_a ?? j.time_a}
+              <div className="flex-1 min-w-0 flex items-center gap-1.5 justify-center">
+                <Bandeira codigo={j.codigo_a} tamanho={20} />
+                <span className="font-display text-sm text-cl-verde-escuro truncate">
+                  {j.codigo_a ?? j.time_a.slice(0,3).toUpperCase()}
                 </span>
-                <span className="text-cl-cinza-texto text-xs">x</span>
-                <span className="text-sm text-cl-verde-escuro truncate">
-                  {j.codigo_b ?? j.time_b}
+                <span className="text-cl-cinza-texto text-xs">×</span>
+                <span className="font-display text-sm text-cl-verde-escuro truncate">
+                  {j.codigo_b ?? j.time_b.slice(0,3).toUpperCase()}
                 </span>
-                <Bandeira codigo={j.codigo_b} tamanho={18} />
+                <Bandeira codigo={j.codigo_b} tamanho={20} />
               </div>
               <div className="hidden sm:block text-xs text-cl-cinza-texto w-28 shrink-0 truncate">
                 {rotuloFase(j.fase)}
               </div>
               <span
-                className={`text-[10px] uppercase tracking-wider rounded-full px-2 py-0.5 shrink-0 ${statusBadgeClass(j.status)}`}
+                className={`hidden sm:inline-block text-[10px] uppercase tracking-wider rounded-full px-2 py-0.5 shrink-0 ${statusBadgeClass(j.status)}`}
               >
                 {STATUS_LABEL[j.status]}
               </span>
               {j.placar_a !== null && j.placar_b !== null ? (
-                <div className="font-display text-cl-verde-escuro text-sm tabular-nums w-12 text-center shrink-0">
-                  {j.placar_a}–{j.placar_b}
-                </div>
+                <span className="placar-chip text-xs px-2 py-1 shrink-0">
+                  <span>{j.placar_a}</span>
+                  <span className="x">×</span>
+                  <span>{j.placar_b}</span>
+                </span>
               ) : (
                 <div className="w-12 text-center text-cl-cinza-texto text-xs shrink-0">
                   –

@@ -226,10 +226,10 @@ function JogosAbertos({ jogos }: { jogos: Jogo[] }) {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="font-display text-cl-verde-escuro text-lg mb-2 flex items-center gap-2">
-      <span className="block h-px flex-1 bg-cl-verde/30" aria-hidden />
-      <span className="px-2">{children}</span>
-      <span className="block h-px flex-1 bg-cl-verde/30" aria-hidden />
+    <h2 className="font-display text-cl-verde-escuro text-base mb-3 flex items-center gap-3 uppercase tracking-wider">
+      <span className="block h-px flex-1 bg-cl-verde/25" aria-hidden />
+      <span>{children}</span>
+      <span className="block h-px flex-1 bg-cl-verde/25" aria-hidden />
     </h2>
   );
 }

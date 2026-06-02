@@ -62,18 +62,18 @@ export function BannerCopa({ proximo, encerrados }: Props) {
           opacity: 0.06,
         }}
       />
-      <div className="relative p-6 sm:p-7">
+      <div className="relative p-5 sm:p-7">
         <div className="flex items-start gap-3">
           <Trophy
             className="text-cl-verde shrink-0"
-            size={40}
+            size={36}
             strokeWidth={1.5}
           />
           <div className="flex-1 min-w-0">
             <p className="text-[10px] uppercase tracking-[0.18em] text-cl-cinza-texto">
               {antesDaCopa ? "Contagem regressiva" : fase ?? "A Copa está rolando"}
             </p>
-            <h2 className="font-display text-cl-verde-escuro text-2xl leading-tight mt-1">
+            <h2 className="font-display text-cl-verde-escuro text-xl sm:text-2xl leading-tight mt-1">
               Copa do Mundo FIFA 2026
             </h2>
           </div>
@@ -84,7 +84,7 @@ export function BannerCopa({ proximo, encerrados }: Props) {
           {antesDaCopa && alvo ? (
             <div>
               <div className="flex items-baseline gap-2">
-                <span className="font-display font-bold text-cl-verde-escuro text-5xl tabular-nums leading-none">
+                <span className="font-display font-bold text-cl-verde-escuro text-6xl tabular-nums leading-none">
                   {c.dias}
                 </span>
                 <span className="text-cl-cinza-texto text-base">
@@ -136,15 +136,15 @@ export function BannerCopa({ proximo, encerrados }: Props) {
               Próximo jogo
             </p>
             <div className="mt-2 flex items-center gap-3">
-              <Bandeira codigo={proximo.codigo_a} tamanho={22} />
-              <span className="font-display text-cl-verde-escuro text-lg truncate">
-                {proximo.time_a}
+              <Bandeira codigo={proximo.codigo_a} tamanho={26} />
+              <span className="font-display text-cl-verde-escuro text-base flex-1 min-w-0 truncate">
+                {proximo.codigo_a ?? proximo.time_a}
               </span>
-              <span className="text-cl-cinza-texto text-sm">x</span>
-              <span className="font-display text-cl-verde-escuro text-lg truncate">
-                {proximo.time_b}
+              <span className="text-cl-cinza-texto text-sm">×</span>
+              <span className="font-display text-cl-verde-escuro text-base flex-1 min-w-0 truncate text-right">
+                {proximo.codigo_b ?? proximo.time_b}
               </span>
-              <Bandeira codigo={proximo.codigo_b} tamanho={22} />
+              <Bandeira codigo={proximo.codigo_b} tamanho={26} />
             </div>
             <p className="text-xs text-cl-cinza-texto mt-2">
               {format(

@@ -13,7 +13,9 @@ export function LayoutCliente({ children }: { children: ReactNode }) {
     >
       <div className="min-h-screen bg-cl-cinza-bg/92">
         <HeaderCliente />
-        <main className="mx-auto max-w-[480px] px-4 py-5 pb-16">{children}</main>
+        <main className="mx-auto max-w-[480px] px-4 pt-4 pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
+          {children}
+        </main>
       </div>
     </div>
   );
