@@ -16,6 +16,7 @@ import { Route as ConfirmacaoRouteImport } from './routes/confirmacao'
 import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminUsuariosRouteImport } from './routes/admin.usuarios'
 import { Route as AdminSorteiosRouteImport } from './routes/admin.sorteios'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminJogosRouteImport } from './routes/admin.jogos'
@@ -56,6 +57,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
+  id: '/admin/usuarios',
+  path: '/admin/usuarios',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminSorteiosRoute = AdminSorteiosRouteImport.update({
   id: '/admin/sorteios',
   path: '/admin/sorteios',
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/admin/jogos': typeof AdminJogosRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/sorteios': typeof AdminSorteiosRoute
+  '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/jogo/$id': typeof AdminJogoIdRoute
 }
@@ -100,6 +107,7 @@ export interface FileRoutesByTo {
   '/admin/jogos': typeof AdminJogosRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/sorteios': typeof AdminSorteiosRoute
+  '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin': typeof AdminIndexRoute
   '/admin/jogo/$id': typeof AdminJogoIdRoute
 }
@@ -114,6 +122,7 @@ export interface FileRoutesById {
   '/admin/jogos': typeof AdminJogosRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/sorteios': typeof AdminSorteiosRoute
+  '/admin/usuarios': typeof AdminUsuariosRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/jogo/$id': typeof AdminJogoIdRoute
 }
@@ -129,6 +138,7 @@ export interface FileRouteTypes {
     | '/admin/jogos'
     | '/admin/login'
     | '/admin/sorteios'
+    | '/admin/usuarios'
     | '/admin/'
     | '/admin/jogo/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -142,6 +152,7 @@ export interface FileRouteTypes {
     | '/admin/jogos'
     | '/admin/login'
     | '/admin/sorteios'
+    | '/admin/usuarios'
     | '/admin'
     | '/admin/jogo/$id'
   id:
@@ -155,6 +166,7 @@ export interface FileRouteTypes {
     | '/admin/jogos'
     | '/admin/login'
     | '/admin/sorteios'
+    | '/admin/usuarios'
     | '/admin/'
     | '/admin/jogo/$id'
   fileRoutesById: FileRoutesById
@@ -169,6 +181,7 @@ export interface RootRouteChildren {
   AdminJogosRoute: typeof AdminJogosRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminSorteiosRoute: typeof AdminSorteiosRoute
+  AdminUsuariosRoute: typeof AdminUsuariosRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminJogoIdRoute: typeof AdminJogoIdRoute
 }
@@ -224,6 +237,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/usuarios': {
+      id: '/admin/usuarios'
+      path: '/admin/usuarios'
+      fullPath: '/admin/usuarios'
+      preLoaderRoute: typeof AdminUsuariosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/sorteios': {
       id: '/admin/sorteios'
       path: '/admin/sorteios'
@@ -265,9 +285,20 @@ const rootRouteChildren: RootRouteChildren = {
   AdminJogosRoute: AdminJogosRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminSorteiosRoute: AdminSorteiosRoute,
+  AdminUsuariosRoute: AdminUsuariosRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminJogoIdRoute: AdminJogoIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
