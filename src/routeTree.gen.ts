@@ -9,8 +9,26 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SobreCopaRouteImport } from './routes/sobre-copa'
+import { Route as PalpitarRouteImport } from './routes/palpitar'
+import { Route as MeusPalpitesRouteImport } from './routes/meus-palpites'
 import { Route as IndexRouteImport } from './routes/index'
 
+const SobreCopaRoute = SobreCopaRouteImport.update({
+  id: '/sobre-copa',
+  path: '/sobre-copa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PalpitarRoute = PalpitarRouteImport.update({
+  id: '/palpitar',
+  path: '/palpitar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeusPalpitesRoute = MeusPalpitesRouteImport.update({
+  id: '/meus-palpites',
+  path: '/meus-palpites',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +37,61 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/meus-palpites': typeof MeusPalpitesRoute
+  '/palpitar': typeof PalpitarRoute
+  '/sobre-copa': typeof SobreCopaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/meus-palpites': typeof MeusPalpitesRoute
+  '/palpitar': typeof PalpitarRoute
+  '/sobre-copa': typeof SobreCopaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/meus-palpites': typeof MeusPalpitesRoute
+  '/palpitar': typeof PalpitarRoute
+  '/sobre-copa': typeof SobreCopaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/meus-palpites' | '/palpitar' | '/sobre-copa'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/meus-palpites' | '/palpitar' | '/sobre-copa'
+  id: '__root__' | '/' | '/meus-palpites' | '/palpitar' | '/sobre-copa'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  MeusPalpitesRoute: typeof MeusPalpitesRoute
+  PalpitarRoute: typeof PalpitarRoute
+  SobreCopaRoute: typeof SobreCopaRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sobre-copa': {
+      id: '/sobre-copa'
+      path: '/sobre-copa'
+      fullPath: '/sobre-copa'
+      preLoaderRoute: typeof SobreCopaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/palpitar': {
+      id: '/palpitar'
+      path: '/palpitar'
+      fullPath: '/palpitar'
+      preLoaderRoute: typeof PalpitarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/meus-palpites': {
+      id: '/meus-palpites'
+      path: '/meus-palpites'
+      fullPath: '/meus-palpites'
+      preLoaderRoute: typeof MeusPalpitesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,6 +104,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  MeusPalpitesRoute: MeusPalpitesRoute,
+  PalpitarRoute: PalpitarRoute,
+  SobreCopaRoute: SobreCopaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
