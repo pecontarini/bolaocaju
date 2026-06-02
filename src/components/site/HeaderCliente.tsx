@@ -19,13 +19,13 @@ const navItens = [
 export function HeaderCliente() {
   const [open, setOpen] = useState(false);
   return (
-    <header className="sticky top-0 z-30 bg-white border-b border-border">
-      <div className="mx-auto max-w-[480px] flex items-center justify-between px-4 py-3">
+    <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-border">
+      <div className="mx-auto max-w-[480px] flex items-center justify-between px-4 h-14">
         <Link to="/" className="flex items-center gap-2">
           <img
             src="/assets/01-logo-horizontal-verde.png"
             alt="Caju Limão"
-            className="h-12 w-auto"
+            className="h-10 w-auto"
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).style.display = "none";
             }}
@@ -38,7 +38,7 @@ export function HeaderCliente() {
               variant="ghost"
               size="icon"
               aria-label="Abrir menu"
-              className="text-cl-verde-escuro"
+              className="text-cl-verde-escuro min-h-11 min-w-11"
             >
               <Menu className="size-6" />
             </Button>
@@ -58,7 +58,7 @@ export function HeaderCliente() {
                   key={item.to}
                   to={item.to}
                   onClick={() => setOpen(false)}
-                  className="py-3 px-3 rounded-md text-base hover:bg-white/10 transition-colors"
+                  className="py-3.5 px-3 rounded-lg text-base min-h-11 flex items-center hover:bg-white/10 transition-colors"
                   activeProps={{ className: "bg-white/15 font-semibold" }}
                 >
                   {item.label}

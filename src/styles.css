@@ -136,7 +136,6 @@
   .glass {
     background-color: color-mix(in oklab, white 78%, transparent);
     backdrop-filter: blur(14px) saturate(140%);
-    -webkit-backdrop-filter: blur(14px) saturate(140%);
     border: 1px solid color-mix(in oklab, white 60%, transparent);
     box-shadow:
       0 1px 0 0 color-mix(in oklab, white 70%, transparent) inset,
@@ -145,8 +144,57 @@
   .glass-dark {
     background-color: color-mix(in oklab, var(--cl-verde-escuro) 80%, transparent);
     backdrop-filter: blur(14px) saturate(140%);
-    -webkit-backdrop-filter: blur(14px) saturate(140%);
     border: 1px solid color-mix(in oklab, white 18%, transparent);
     color: white;
   }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  .safe-bottom {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+  .safe-top {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
+  .placar-chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: 0.85rem;
+    background: var(--cl-verde-escuro);
+    color: #fff;
+    font-family: var(--font-display);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    box-shadow: 0 6px 18px -10px color-mix(in oklab, var(--cl-verde-escuro) 80%, transparent);
+  }
+  .placar-chip .x {
+    color: color-mix(in oklab, white 55%, transparent);
+    font-size: 0.85em;
+  }
+  .pulse-dot {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 9999px;
+    background: var(--cl-sucesso);
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--cl-sucesso) 70%, transparent);
+    animation: pulse-dot 1.8s ease-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%   { box-shadow: 0 0 0 0 color-mix(in oklab, var(--cl-sucesso) 70%, transparent); }
+    70%  { box-shadow: 0 0 0 8px color-mix(in oklab, var(--cl-sucesso) 0%, transparent); }
+    100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--cl-sucesso) 0%, transparent); }
+  }
+  .card-press {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .card-press:active {
+    transform: scale(0.985);
+  }
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
