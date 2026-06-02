@@ -21,7 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCliente } from "@/store/cliente";
 import {
   mascararTelefone,
-  normalizarE164,
+  normalizarTelefoneBR,
   REGEX_E164_BR,
 } from "@/lib/telefone";
 
