@@ -200,18 +200,19 @@ function DetalheJogoPage() {
 
       {/* Card confronto */}
       <section className="glass rounded-3xl p-5 mb-5">
-        <div className="flex items-center justify-center gap-6">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-6">
           <TimeBox nome={jogo.time_a} codigo={jogo.codigo_a} />
           <div className="text-center">
             {placarLancado ? (
-              <p className="font-display text-cl-verde-escuro text-5xl tabular-nums leading-none">
-                {jogo.placar_a} <span className="text-cl-cinza-texto">×</span>{" "}
-                {jogo.placar_b}
-              </p>
+              <span className="placar-chip text-3xl sm:text-4xl px-4 py-2">
+                <span>{jogo.placar_a}</span>
+                <span className="x">×</span>
+                <span>{jogo.placar_b}</span>
+              </span>
             ) : (
-              <p className="font-display text-cl-cinza-texto text-4xl">×</p>
+              <p className="font-display text-cl-cinza-texto text-4xl leading-none">×</p>
             )}
-            <p className="text-[11px] uppercase tracking-wider text-cl-cinza-texto mt-1">
+            <p className="text-[10px] uppercase tracking-wider text-cl-cinza-texto mt-2">
               {placarLancado ? "Placar final" : "A definir"}
             </p>
           </div>
@@ -273,14 +274,14 @@ function DetalheJogoPage() {
 
 function TimeBox({ nome, codigo }: { nome: string; codigo: string | null }) {
   return (
-    <div className="text-center">
+    <div className="text-center min-w-0">
       <div className="flex justify-center">
-        <Bandeira codigo={codigo} tamanho={48} />
+        <Bandeira codigo={codigo} tamanho={44} />
       </div>
-      <p className="font-display text-cl-verde-escuro text-lg mt-1">
+      <p className="font-display text-cl-verde-escuro text-base sm:text-lg mt-1.5 leading-none">
         {codigo ?? ""}
       </p>
-      <p className="text-xs text-cl-cinza-texto truncate max-w-[140px]">
+      <p className="text-[11px] text-cl-cinza-texto truncate mt-1 uppercase tracking-wide">
         {nome}
       </p>
     </div>
