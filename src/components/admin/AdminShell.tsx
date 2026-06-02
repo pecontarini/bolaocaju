@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, ListOrdered, Trophy, LogOut, Loader2, Menu } from "lucide-react";
+import { LayoutDashboard, ListOrdered, Trophy, Users, LogOut, Loader2, Menu } from "lucide-react";
 import { useState } from "react";
 
 import { useAdminSession, signOutAdmin } from "@/lib/admin/auth";
@@ -17,6 +17,7 @@ const NAV = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/admin/jogos", label: "Jogos", icon: ListOrdered, exact: false },
   { to: "/admin/sorteios", label: "Ganhadores", icon: Trophy, exact: false },
+  { to: "/admin/usuarios", label: "Usuários", icon: Users, exact: false },
 ] as const;
 
 export function AdminShell({ children }: { children: ReactNode }) {
