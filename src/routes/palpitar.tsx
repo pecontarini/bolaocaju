@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Minus, Plus, MapPin, Loader2 } from "lucide-react";
+import { Minus, Plus, MapPin, Loader2, Receipt, Info } from "lucide-react";
 
 import { LayoutCliente } from "@/components/site/LayoutCliente";
 import { Button } from "@/components/ui/button";
@@ -59,8 +59,16 @@ function PalpitarPage() {
 
   const [placarA, setPlacarA] = useState(0);
   const [placarB, setPlacarB] = useState(0);
+  const [comandaStr, setComandaStr] = useState("");
   const [geo, setGeo] = useState<GeoState>({ status: "idle" });
   const [enviando, setEnviando] = useState(false);
+
+  const comandaNum = Number(comandaStr);
+  const comandaValida =
+    comandaStr !== "" &&
+    Number.isInteger(comandaNum) &&
+    comandaNum >= 1 &&
+    comandaNum <= 9999;
 
   function pedirGeo() {
     if (!("geolocation" in navigator)) {
@@ -97,6 +105,10 @@ function PalpitarPage() {
 
   async function confirmar() {
     if (!jogoAtivo.data || !cliente_id || geo.status !== "ok" || enviando) return;
+    if (!comandaValida) {
+      toast.error("Informe o número da comanda (1 a 9999).");
+      return;
+    }
     setEnviando(true);
     try {
       const { error } = await supabase.from("palpites").insert({
@@ -104,6 +116,7 @@ function PalpitarPage() {
         cliente_id,
         placar_a: placarA,
         placar_b: placarB,
+        comanda: comandaNum,
         latitude: geo.latitude,
         longitude: geo.longitude,
       });
@@ -120,6 +133,8 @@ function PalpitarPage() {
           toast.error("Os palpites deste jogo ainda não abriram.");
         } else if (m.includes("maioridade")) {
           toast.error("É preciso confirmar que você tem 18 anos ou mais.");
+        } else if (m.includes("comanda")) {
+          toast.error("Número de comanda inválido.");
         } else {
           toast.error("Não consegui registrar agora. Tente de novo em instantes.");
         }
@@ -131,6 +146,7 @@ function PalpitarPage() {
         time_b: jogoAtivo.data.time_b,
         placar_a: placarA,
         placar_b: placarB,
+        comanda: comandaNum,
       });
       navigate({ to: "/confirmacao" });
     } finally {
@@ -232,16 +248,81 @@ function PalpitarPage() {
         )}
       </section>
 
+      <section className="rounded-2xl bg-card border-2 border-cl-verde shadow-sm p-4 mb-4">
+        <label
+          htmlFor="comanda"
+          className="flex items-center gap-2 font-display text-cl-verde-escuro text-base"
+        >
+          <Receipt className="size-5 text-cl-laranja" />
+          Número da comanda
+        </label>
+        <p className="text-xs text-cl-cinza-texto mt-1">
+          O número impresso na sua comanda do bar.
+        </p>
+        <input
+          id="comanda"
+          type="number"
+          inputMode="numeric"
+          min={1}
+          max={9999}
+          step={1}
+          value={comandaStr}
+          onChange={(e) => setComandaStr(e.target.value.replace(/\D/g, "").slice(0, 4))}
+          placeholder="Ex.: 27"
+          disabled={geo.status !== "ok"}
+          className="mt-3 w-full h-14 rounded-xl bg-white border border-cl-verde/30 text-center text-3xl font-display tabular-nums text-cl-verde-escuro focus:outline-none focus:ring-2 focus:ring-cl-verde disabled:opacity-50"
+          aria-invalid={!comandaValida && comandaStr !== ""}
+        />
+        {!comandaValida && comandaStr !== "" && (
+          <p className="text-xs text-cl-laranja mt-2">
+            Use um número de 1 a 9999.
+          </p>
+        )}
+      </section>
+
+      <RegrasBolao />
+
       <div className="sticky bottom-3 pt-2">
         <Button
           onClick={confirmar}
-          disabled={geo.status !== "ok" || enviando}
+          disabled={geo.status !== "ok" || enviando || !comandaValida}
           className="w-full h-14 text-base font-semibold bg-cl-verde hover:bg-cl-verde-escuro text-white rounded-xl shadow-md"
         >
           {enviando ? "Registrando…" : "Confirmar palpite"}
         </Button>
       </div>
     </LayoutCliente>
+  );
+}
+
+function RegrasBolao() {
+  const regras = [
+    "1 aposta por jogo.",
+    "As apostas encerram no apito inicial da partida.",
+    "1 chopp por comanda que acertar o placar no tempo regular.",
+    "É obrigatória a presença do titular para apostar e resgatar.",
+    "Para resgatar: apresente sua identidade (ou o app) e a comanda.",
+  ];
+  return (
+    <section className="rounded-2xl bg-cl-verde-claro/30 border border-cl-verde/30 p-4 mb-4">
+      <div className="flex items-center gap-2 mb-2">
+        <Info className="size-4 text-cl-verde-escuro" />
+        <p className="font-display text-cl-verde-escuro text-sm uppercase tracking-wide">
+          Como funciona
+        </p>
+      </div>
+      <ul className="space-y-1.5">
+        {regras.map((r) => (
+          <li
+            key={r}
+            className="text-[13px] text-cl-verde-escuro flex gap-2 leading-snug"
+          >
+            <span className="text-cl-laranja shrink-0">•</span>
+            <span>{r}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
