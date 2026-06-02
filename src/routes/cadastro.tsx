@@ -33,7 +33,7 @@ const schema = z.object({
     .max(100, "Nome muito longo"),
   telefone: z
     .string()
-    .transform((v) => normalizarE164(v))
+    .transform((v) => normalizarTelefoneBR(v))
     .refine((v) => REGEX_E164_BR.test(v), "Telefone inválido — use DDD + número"),
   maioridade: z.literal(true, {
     errorMap: () => ({ message: "Confirme que você tem 18 anos ou mais" }),
@@ -68,7 +68,12 @@ function CadastroPage() {
 
   async function onSubmit(values: FormValues) {
     setEnviando(true);
-    const telefoneE164 = normalizarE164(values.telefone);
+    const telefoneE164 = normalizarTelefoneBR(values.telefone);
+    if (!REGEX_E164_BR.test(telefoneE164)) {
+      toast.error("Telefone inválido, confira o DDD e o número");
+      setEnviando(false);
+      return;
+    }
     const nome = values.nome.trim();
     try {
       const { data, error } = await supabase.rpc("fn_identificar_cliente", {
