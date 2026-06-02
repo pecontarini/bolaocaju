@@ -71,41 +71,28 @@ function CadastroPage() {
     const telefoneE164 = normalizarE164(values.telefone);
     const nome = values.nome.trim();
     try {
-      const { data: existente, error: errSel } = await supabase
-        .from("clientes")
-        .select("id, nome")
-        .eq("telefone", telefoneE164)
-        .maybeSingle();
-      if (errSel) throw errSel;
-
-      let clienteId: string;
-      let nomeFinal = nome;
-      if (existente) {
-        clienteId = existente.id as string;
-        nomeFinal = (existente.nome as string) || nome;
-      } else {
-        const { data: novo, error: errIns } = await supabase
-          .from("clientes")
-          .insert({
-            telefone: telefoneE164,
-            nome,
-            maioridade: true,
-            opt_in_marketing: values.opt_in_marketing,
-          })
-          .select("id, nome")
-          .single();
-        if (errIns) throw errIns;
-        clienteId = novo.id as string;
-        nomeFinal = (novo.nome as string) || nome;
-      }
-
-      setCliente({ telefone: telefoneE164, nome: nomeFinal, cliente_id: clienteId });
+      const { data, error } = await supabase.rpc("fn_identificar_cliente", {
+        p_nome: nome,
+        p_telefone: telefoneE164,
+        p_opt_in: values.opt_in_marketing,
+      });
+      if (error) throw error;
+      const cliente = Array.isArray(data) ? data[0] : data;
+      if (!cliente?.cliente_id) throw new Error("Resposta inválida do servidor");
+      const nomeFinal = (cliente.cliente_nome as string) || nome;
+      const telefoneFinal = (cliente.cliente_telefone as string) || telefoneE164;
+      setCliente({
+        telefone: telefoneFinal,
+        nome: nomeFinal,
+        cliente_id: cliente.cliente_id as string,
+      });
       toast.success(`Bem-vindo, ${nomeFinal}!`);
       navigate({ to: next as "/palpitar" });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "";
-      if (msg.toLowerCase().includes("maioridade")) {
-        toast.error("É preciso confirmar que você tem 18 anos ou mais.");
+      const low = msg.toLowerCase();
+      if (low.includes("telefone invalido") || low.includes("telefone inválido") || low.includes("telefone")) {
+        toast.error("Confira o número de telefone com DDD.");
       } else {
         toast.error("Não consegui te cadastrar agora. Tente de novo em instantes.");
       }
