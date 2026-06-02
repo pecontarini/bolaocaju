@@ -142,11 +142,11 @@ function ListaJogosPage() {
           Nenhum jogo encontrado com esses filtros.
         </div>
       ) : (
-        <ul className="space-y-2 md:space-y-0 md:glass md:rounded-2xl md:divide-y md:divide-cl-verde/10 md:overflow-hidden">
+        <ul className="glass rounded-2xl divide-y divide-cl-verde/10 overflow-hidden">
           {filtrados.map((j) => (
             <li
               key={j.id}
-              className="glass md:glass-none rounded-2xl md:rounded-none px-4 py-3 flex items-center gap-3 hover:bg-cl-verde/5 transition-colors"
+              className="px-3 sm:px-4 py-3 flex items-center gap-2 sm:gap-3 hover:bg-cl-verde/5 transition-colors"
             >
               <div className="w-10 text-center font-display text-cl-cinza-texto text-sm tabular-nums shrink-0">
                 #{j.numero_jogo}
