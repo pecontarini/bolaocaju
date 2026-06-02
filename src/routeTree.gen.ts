@@ -16,6 +16,7 @@ import { Route as ConfirmacaoRouteImport } from './routes/confirmacao'
 import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminSorteiosRouteImport } from './routes/admin.sorteios'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminJogosRouteImport } from './routes/admin.jogos'
 import { Route as AdminJogoIdRouteImport } from './routes/admin.jogo.$id'
@@ -55,6 +56,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminSorteiosRoute = AdminSorteiosRouteImport.update({
+  id: '/admin/sorteios',
+  path: '/admin/sorteios',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
   id: '/admin/login',
   path: '/admin/login',
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/sobre-copa': typeof SobreCopaRoute
   '/admin/jogos': typeof AdminJogosRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/sorteios': typeof AdminSorteiosRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/jogo/$id': typeof AdminJogoIdRoute
 }
@@ -92,6 +99,7 @@ export interface FileRoutesByTo {
   '/sobre-copa': typeof SobreCopaRoute
   '/admin/jogos': typeof AdminJogosRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/sorteios': typeof AdminSorteiosRoute
   '/admin': typeof AdminIndexRoute
   '/admin/jogo/$id': typeof AdminJogoIdRoute
 }
@@ -105,6 +113,7 @@ export interface FileRoutesById {
   '/sobre-copa': typeof SobreCopaRoute
   '/admin/jogos': typeof AdminJogosRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/sorteios': typeof AdminSorteiosRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/jogo/$id': typeof AdminJogoIdRoute
 }
@@ -119,6 +128,7 @@ export interface FileRouteTypes {
     | '/sobre-copa'
     | '/admin/jogos'
     | '/admin/login'
+    | '/admin/sorteios'
     | '/admin/'
     | '/admin/jogo/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -131,6 +141,7 @@ export interface FileRouteTypes {
     | '/sobre-copa'
     | '/admin/jogos'
     | '/admin/login'
+    | '/admin/sorteios'
     | '/admin'
     | '/admin/jogo/$id'
   id:
@@ -143,6 +154,7 @@ export interface FileRouteTypes {
     | '/sobre-copa'
     | '/admin/jogos'
     | '/admin/login'
+    | '/admin/sorteios'
     | '/admin/'
     | '/admin/jogo/$id'
   fileRoutesById: FileRoutesById
@@ -156,6 +168,7 @@ export interface RootRouteChildren {
   SobreCopaRoute: typeof SobreCopaRoute
   AdminJogosRoute: typeof AdminJogosRoute
   AdminLoginRoute: typeof AdminLoginRoute
+  AdminSorteiosRoute: typeof AdminSorteiosRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminJogoIdRoute: typeof AdminJogoIdRoute
 }
@@ -211,6 +224,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/sorteios': {
+      id: '/admin/sorteios'
+      path: '/admin/sorteios'
+      fullPath: '/admin/sorteios'
+      preLoaderRoute: typeof AdminSorteiosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/login': {
       id: '/admin/login'
       path: '/admin/login'
@@ -244,6 +264,7 @@ const rootRouteChildren: RootRouteChildren = {
   SobreCopaRoute: SobreCopaRoute,
   AdminJogosRoute: AdminJogosRoute,
   AdminLoginRoute: AdminLoginRoute,
+  AdminSorteiosRoute: AdminSorteiosRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminJogoIdRoute: AdminJogoIdRoute,
 }
