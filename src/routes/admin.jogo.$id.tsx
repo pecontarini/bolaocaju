@@ -10,6 +10,8 @@ import {
   Save,
   CheckCircle2,
   Gift,
+  AlertTriangle,
+  Receipt,
 } from "lucide-react";
 
 import { AdminShell, PageHeader } from "@/components/admin/AdminShell";
@@ -34,6 +36,7 @@ import {
   rotuloFase,
   statusBadgeClass,
   STATUS_LABEL,
+  mascararTelefoneBR,
 } from "@/lib/admin/jogo-helpers";
 
 const COLUNAS =
@@ -47,14 +50,10 @@ export const Route = createFileRoute("/admin/jogo/$id")({
   ),
 });
 
-type Sorteio = {
-  id: string;
-  jogo_id: string;
-  vencedor_nome: string | null;
-  vencedor_telefone: string | null;
-  total_acertadores: number | null;
-  seed: string | null;
-  created_at: string;
+type Ganhador = {
+  nome: string | null;
+  telefone: string | null;
+  comanda: number | null;
 };
 
 function DetalheJogoPage() {
@@ -108,18 +107,26 @@ function DetalheJogoPage() {
     };
   }, [id]);
 
-  const sorteioQ = useQuery({
-    queryKey: ["admin", "sorteio", id],
-    queryFn: async () => {
+  const ganhadoresQ = useQuery({
+    queryKey: ["admin", "ganhadores", id],
+    enabled: false,
+    queryFn: async (): Promise<Ganhador[]> => {
       const { data, error } = await supabase
-        .from("sorteios")
-        .select("*")
+        .from("palpites")
+        .select("comanda, clientes:cliente_id(nome, telefone)")
         .eq("jogo_id", id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .eq("acertou", true)
+        .order("comanda", { ascending: true });
       if (error) throw error;
-      return (data as Sorteio | null) ?? null;
+      type Row = {
+        comanda: number | null;
+        clientes: { nome: string | null; telefone: string | null } | null;
+      };
+      return ((data ?? []) as unknown as Row[]).map((r) => ({
+        comanda: r.comanda,
+        nome: r.clientes?.nome ?? null,
+        telefone: r.clientes?.telefone ?? null,
+      }));
     },
   });
 
@@ -127,8 +134,9 @@ function DetalheJogoPage() {
     qc.invalidateQueries({ queryKey: ["admin", "jogo", id] });
     qc.invalidateQueries({ queryKey: ["admin", "jogos-todos"] });
     qc.invalidateQueries({ queryKey: ["admin", "jogo-ativo"] });
-    qc.invalidateQueries({ queryKey: ["admin", "sorteio", id] });
-    qc.invalidateQueries({ queryKey: ["admin", "sorteios"] });
+    qc.invalidateQueries({ queryKey: ["admin", "ganhadores", id] });
+    qc.invalidateQueries({ queryKey: ["admin", "palpites", id] });
+    qc.invalidateQueries({ queryKey: ["admin", "ganhadores-jogos"] });
   }
 
   if (jogoQ.isLoading) {
@@ -161,9 +169,9 @@ function DetalheJogoPage() {
   const podeLancarPlacar =
     jogo.status === "ativo" || jogo.status === "palpites_encerrados";
   const placarLancado = jogo.placar_a !== null && jogo.placar_b !== null;
-  const podeSortear =
-    placarLancado && jogo.status !== "encerrado" && !sorteioQ.data;
   const jaEncerrado = jogo.status === "encerrado";
+  const podeApurar = placarLancado && !jaEncerrado;
+  const mostrarGanhadores = jaEncerrado || (ganhadoresQ.data != null);
 
   return (
     <>
@@ -252,26 +260,20 @@ function DetalheJogoPage() {
           />
         )}
 
-        {podeSortear && (
-          <AcaoSortear
+        {podeApurar && (
+          <AcaoApurar
             jogo={jogo}
             userId={userId}
-            onDone={(s) => {
+            onApurado={(lista) => {
+              qc.setQueryData(["admin", "ganhadores", id], lista);
               invalidarTudo();
-              qc.setQueryData(["admin", "sorteio", id], s);
             }}
           />
         )}
 
-        {sorteioQ.data && (
-          <CardVencedor sorteio={sorteioQ.data} jogo={jogo} />
-        )}
+        {mostrarGanhadores && <CardGanhadores jogo={jogo} />}
 
-        {jaEncerrado && !sorteioQ.data && (
-          <div className="glass rounded-2xl p-5 text-center text-sm text-cl-cinza-texto">
-            Jogo encerrado sem sorteio registrado.
-          </div>
-        )}
+        <ListaPalpitesAdmin jogoId={id} />
       </div>
     </>
   );
@@ -514,6 +516,13 @@ function AcaoLancarPlacar({
           titulo="Lançar placar final"
           passo={3}
         />
+        <div className="rounded-xl bg-cl-aviso/15 border border-cl-aviso/40 p-3 mb-4 flex items-start gap-2">
+          <AlertTriangle className="size-4 text-cl-aviso mt-0.5 shrink-0" />
+          <p className="text-xs text-cl-verde-escuro leading-snug">
+            Lance o placar do <strong>tempo regular</strong> (90 min +
+            acréscimos), não prorrogação nem pênaltis.
+          </p>
+        </div>
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
           <PlacarInput nome={jogo.time_a} codigo={jogo.codigo_a} valor={a} onChange={setA} />
           <div className="font-display text-2xl text-cl-cinza-texto text-center">×</div>
