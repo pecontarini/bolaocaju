@@ -49,14 +49,7 @@ export function HeaderCliente() {
           >
             <SheetHeader>
               <SheetTitle className="text-white font-display text-2xl">
-                <img
-                  src="/assets/04-logo-texto-branco-fundo-verde.png"
-                  alt="Caju Limão"
-                  className="h-12 w-auto"
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).style.display = "none";
-                  }}
-                />
+                Bolão Caju Limão
               </SheetTitle>
             </SheetHeader>
             <nav className="mt-6 flex flex-col gap-1 px-2">
