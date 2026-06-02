@@ -17,6 +17,7 @@ import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
+import { Route as AdminJogosRouteImport } from './routes/admin.jogos'
 
 const SobreCopaRoute = SobreCopaRouteImport.update({
   id: '/sobre-copa',
@@ -58,6 +59,11 @@ const AdminLoginRoute = AdminLoginRouteImport.update({
   path: '/admin/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminJogosRoute = AdminJogosRouteImport.update({
+  id: '/admin/jogos',
+  path: '/admin/jogos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/meus-palpites': typeof MeusPalpitesRoute
   '/palpitar': typeof PalpitarRoute
   '/sobre-copa': typeof SobreCopaRoute
+  '/admin/jogos': typeof AdminJogosRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/': typeof AdminIndexRoute
 }
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/meus-palpites': typeof MeusPalpitesRoute
   '/palpitar': typeof PalpitarRoute
   '/sobre-copa': typeof SobreCopaRoute
+  '/admin/jogos': typeof AdminJogosRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin': typeof AdminIndexRoute
 }
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/meus-palpites': typeof MeusPalpitesRoute
   '/palpitar': typeof PalpitarRoute
   '/sobre-copa': typeof SobreCopaRoute
+  '/admin/jogos': typeof AdminJogosRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/': typeof AdminIndexRoute
 }
@@ -99,6 +108,7 @@ export interface FileRouteTypes {
     | '/meus-palpites'
     | '/palpitar'
     | '/sobre-copa'
+    | '/admin/jogos'
     | '/admin/login'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/meus-palpites'
     | '/palpitar'
     | '/sobre-copa'
+    | '/admin/jogos'
     | '/admin/login'
     | '/admin'
   id:
@@ -119,6 +130,7 @@ export interface FileRouteTypes {
     | '/meus-palpites'
     | '/palpitar'
     | '/sobre-copa'
+    | '/admin/jogos'
     | '/admin/login'
     | '/admin/'
   fileRoutesById: FileRoutesById
@@ -130,6 +142,7 @@ export interface RootRouteChildren {
   MeusPalpitesRoute: typeof MeusPalpitesRoute
   PalpitarRoute: typeof PalpitarRoute
   SobreCopaRoute: typeof SobreCopaRoute
+  AdminJogosRoute: typeof AdminJogosRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -192,6 +205,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/jogos': {
+      id: '/admin/jogos'
+      path: '/admin/jogos'
+      fullPath: '/admin/jogos'
+      preLoaderRoute: typeof AdminJogosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -202,6 +222,7 @@ const rootRouteChildren: RootRouteChildren = {
   MeusPalpitesRoute: MeusPalpitesRoute,
   PalpitarRoute: PalpitarRoute,
   SobreCopaRoute: SobreCopaRoute,
+  AdminJogosRoute: AdminJogosRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
