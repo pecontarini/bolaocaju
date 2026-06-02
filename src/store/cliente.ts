@@ -7,6 +7,7 @@ export type UltimoPalpite = {
   time_b: string;
   placar_a: number;
   placar_b: number;
+  comanda?: number;
 } | null;
 
 export type ClienteSessao = {

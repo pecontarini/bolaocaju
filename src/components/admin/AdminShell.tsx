@@ -16,7 +16,7 @@ import {
 const NAV = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/admin/jogos", label: "Jogos", icon: ListOrdered, exact: false },
-  { to: "/admin/sorteios", label: "Sorteios", icon: Trophy, exact: false },
+  { to: "/admin/sorteios", label: "Ganhadores", icon: Trophy, exact: false },
 ] as const;
 
 export function AdminShell({ children }: { children: ReactNode }) {
