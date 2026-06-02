@@ -8,9 +8,18 @@ export function mascararTelefone(valor: string): string {
   return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
 }
 
-export function normalizarE164(valor: string): string {
-  const d = valor.replace(/\D/g, "");
-  return `+55${d}`;
+export function normalizarTelefoneBR(input: string): string {
+  let d = (input || "").replace(/[^0-9]/g, "");
+  d = d.replace(/^0+/, "");
+  if (d.length > 11 && d.startsWith("55")) {
+    d = d.slice(2);
+  }
+  return "+55" + d;
 }
 
-export const REGEX_E164_BR = /^\+55\d{10,11}$/;
+/** @deprecated Use normalizarTelefoneBR instead */
+export function normalizarE164(valor: string): string {
+  return normalizarTelefoneBR(valor);
+}
+
+export const REGEX_E164_BR = /^\+55[0-9]{10,11}$/;
