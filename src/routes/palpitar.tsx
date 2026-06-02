@@ -8,7 +8,8 @@ import { LayoutCliente } from "@/components/site/LayoutCliente";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useCliente } from "@/store/cliente";
-import { type Jogo, bandeiraEmoji } from "@/lib/jogos";
+import { type Jogo } from "@/lib/jogos";
+import { Bandeira } from "@/components/jogos/Bandeira";
 
 const COLUNAS =
   "id,numero_jogo,fase,grupo,data_hora_inicio,time_a,codigo_a,time_b,codigo_b,estadio,cidade,pais_sede,status,placar_a,placar_b,palpites_encerrados,premio_descricao,premio_imagem_url,envolve_brasil";
@@ -260,8 +261,8 @@ function BlocoPlacar({
   const set = (v: number) => onChange(Math.max(0, Math.min(20, v)));
   return (
     <div className="text-center">
-      <div className="text-3xl leading-none" aria-hidden>
-        {bandeiraEmoji(codigo)}
+      <div className="flex justify-center">
+        <Bandeira codigo={codigo} tamanho={32} />
       </div>
       <div className="mt-1 text-xs font-semibold text-cl-verde-escuro uppercase">
         {codigo ?? ""}
