@@ -14,7 +14,7 @@ const navItens = [
   { to: "/", label: "Início" },
   { to: "/meus-palpites", label: "Meus palpites" },
   { to: "/sobre-copa", label: "Sobre a Copa" },
-];
+] as const;
 
 export function HeaderCliente() {
   const [open, setOpen] = useState(false);
@@ -30,9 +30,7 @@ export function HeaderCliente() {
               (e.currentTarget as HTMLImageElement).style.display = "none";
             }}
           />
-          <span className="font-display text-cl-verde-escuro text-lg font-semibold sr-only">
-            Bolão Caju Limão
-          </span>
+          <span className="sr-only">Bolão Caju Limão</span>
         </Link>
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
