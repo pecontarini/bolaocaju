@@ -1,12 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Copy, ChevronDown, Trophy } from "lucide-react";
-import { toast } from "sonner";
+import { ChevronDown, Trophy, Loader2 } from "lucide-react";
 
 import { AdminShell, PageHeader } from "@/components/admin/AdminShell";
 import { Bandeira } from "@/components/jogos/Bandeira";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import {
   formatarDataHoraBR,
@@ -16,62 +14,56 @@ import {
 export const Route = createFileRoute("/admin/sorteios")({
   component: () => (
     <AdminShell>
-      <SorteiosPage />
+      <GanhadoresPage />
     </AdminShell>
   ),
 });
 
-type SorteioComJogo = {
+type JogoEncerrado = {
   id: string;
-  jogo_id: string;
-  vencedor_nome: string | null;
-  vencedor_telefone: string | null;
-  total_acertadores: number | null;
-  seed: string | null;
-  created_at: string;
-  jogos: {
-    time_a: string;
-    time_b: string;
-    codigo_a: string | null;
-    codigo_b: string | null;
-    placar_a: number | null;
-    placar_b: number | null;
-    numero_jogo: number;
-  } | null;
+  numero_jogo: number;
+  time_a: string;
+  time_b: string;
+  codigo_a: string | null;
+  codigo_b: string | null;
+  placar_a: number | null;
+  placar_b: number | null;
+  data_hora_inicio: string;
 };
 
-function SorteiosPage() {
+function GanhadoresPage() {
   const q = useQuery({
-    queryKey: ["admin", "sorteios"],
+    queryKey: ["admin", "ganhadores-jogos"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("sorteios")
+        .from("jogos")
         .select(
-          "id,jogo_id,vencedor_nome,vencedor_telefone,total_acertadores,seed,created_at,jogos:jogo_id(time_a,time_b,codigo_a,codigo_b,placar_a,placar_b,numero_jogo)",
+          "id,numero_jogo,time_a,time_b,codigo_a,codigo_b,placar_a,placar_b,data_hora_inicio",
         )
-        .order("created_at", { ascending: false });
+        .eq("status", "encerrado")
+        .order("data_hora_inicio", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as unknown as SorteioComJogo[];
+      return (data ?? []) as JogoEncerrado[];
     },
   });
 
   return (
     <>
       <PageHeader
-        titulo="Sorteios"
-        subtitulo="Histórico auditável de todos os sorteios."
+        titulo="Ganhadores"
+        subtitulo="Comandas que acertaram o placar no tempo regular."
       />
 
       {q.isLoading ? (
         <div className="glass rounded-2xl h-64 animate-pulse" />
       ) : !q.data || q.data.length === 0 ? (
         <div className="glass rounded-2xl p-8 text-center text-sm text-cl-cinza-texto">
-          Nenhum sorteio realizado ainda.
+          Nenhum jogo encerrado ainda.
         </div>
       ) : (
         <ul className="space-y-3">
-          {q.data.map((s) => (
-            <ItemSorteio key={s.id} s={s} />
+          {q.data.map((j) => (
+            <ItemJogo key={j.id} jogo={j} />
           ))}
         </ul>
       )}
@@ -79,18 +71,33 @@ function SorteiosPage() {
   );
 }
 
-function ItemSorteio({ s }: { s: SorteioComJogo }) {
+type GanhadorLinha = {
+  comanda: number | null;
+  clientes: { nome: string | null; telefone: string | null } | null;
+};
+
+function ItemJogo({ jogo }: { jogo: JogoEncerrado }) {
   const [aberto, setAberto] = useState(false);
 
-  async function copiar() {
-    if (!s.seed) return;
-    try {
-      await navigator.clipboard.writeText(s.seed);
-      toast.success("Seed copiado.");
-    } catch {
-      toast.error("Não consegui copiar agora.");
-    }
-  }
+  const ganhadoresQ = useQuery({
+    queryKey: ["admin", "ganhadores", jogo.id],
+    enabled: aberto,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("palpites")
+        .select("comanda, clientes:cliente_id(nome, telefone)")
+        .eq("jogo_id", jogo.id)
+        .eq("acertou", true)
+        .order("comanda", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as unknown as GanhadorLinha[];
+    },
+  });
+
+  const lista = ganhadoresQ.data ?? [];
+  const comandasDistintas = new Set(
+    lista.map((g) => g.comanda).filter((c): c is number => c != null),
+  ).size;
 
   return (
     <li className="glass rounded-2xl overflow-hidden">
@@ -101,31 +108,21 @@ function ItemSorteio({ s }: { s: SorteioComJogo }) {
       >
         <Trophy className="size-5 text-cl-laranja shrink-0" />
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 text-sm">
-            {s.jogos && (
-              <>
-                <Bandeira codigo={s.jogos.codigo_a} tamanho={16} />
-                <span className="font-medium text-cl-verde-escuro">
-                  {s.jogos.codigo_a ?? s.jogos.time_a}
-                </span>
-                <span className="font-display text-cl-verde-escuro tabular-nums">
-                  {s.jogos.placar_a}–{s.jogos.placar_b}
-                </span>
-                <span className="font-medium text-cl-verde-escuro">
-                  {s.jogos.codigo_b ?? s.jogos.time_b}
-                </span>
-                <Bandeira codigo={s.jogos.codigo_b} tamanho={16} />
-              </>
-            )}
+          <div className="flex items-center gap-2 text-sm flex-wrap">
+            <Bandeira codigo={jogo.codigo_a} tamanho={16} />
+            <span className="font-medium text-cl-verde-escuro">
+              {jogo.codigo_a ?? jogo.time_a}
+            </span>
+            <span className="font-display text-cl-verde-escuro tabular-nums">
+              {jogo.placar_a}–{jogo.placar_b}
+            </span>
+            <span className="font-medium text-cl-verde-escuro">
+              {jogo.codigo_b ?? jogo.time_b}
+            </span>
+            <Bandeira codigo={jogo.codigo_b} tamanho={16} />
           </div>
-          <p className="font-display text-cl-verde-escuro text-base mt-0.5 truncate">
-            {s.vencedor_nome ?? "—"}
-          </p>
-          <p className="text-xs text-cl-cinza-texto">
-            {mascararTelefoneBR(s.vencedor_telefone)} •{" "}
-            {s.total_acertadores ?? 0}{" "}
-            {s.total_acertadores === 1 ? "acertador" : "acertadores"} •{" "}
-            {formatarDataHoraBR(s.created_at)}
+          <p className="text-xs text-cl-cinza-texto mt-0.5">
+            Jogo #{jogo.numero_jogo} • {formatarDataHoraBR(jogo.data_hora_inicio)}
           </p>
         </div>
         <ChevronDown
@@ -135,24 +132,51 @@ function ItemSorteio({ s }: { s: SorteioComJogo }) {
 
       {aberto && (
         <div className="px-4 pb-4 -mt-1">
-          <div className="rounded-xl bg-white/80 border border-cl-verde/20 p-3">
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-[10px] uppercase tracking-widest text-cl-cinza-texto">
-                Seed (comprovante)
-              </p>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={copiar}
-                className="h-7 text-cl-verde-escuro"
-              >
-                <Copy className="size-3.5 mr-1" /> Copiar
-              </Button>
+          {ganhadoresQ.isLoading ? (
+            <div className="py-4 text-center text-cl-cinza-texto">
+              <Loader2 className="size-5 mx-auto animate-spin" />
             </div>
-            <p className="font-mono text-[11px] break-all text-cl-verde-escuro">
-              {s.seed ?? "—"}
+          ) : lista.length === 0 ? (
+            <p className="text-sm text-cl-verde-escuro text-center py-3">
+              Ninguém acertou o placar.
             </p>
-          </div>
+          ) : (
+            <>
+              <div className="rounded-xl bg-cl-laranja text-cl-verde-escuro px-3 py-2 text-center mb-3">
+                <p className="text-[10px] uppercase tracking-widest font-semibold">
+                  Chopps servidos
+                </p>
+                <p className="font-display text-2xl tabular-nums leading-none mt-0.5">
+                  {comandasDistintas}
+                </p>
+              </div>
+              <ul className="space-y-2">
+                {lista.map((g, i) => (
+                  <li
+                    key={`${g.comanda}-${i}`}
+                    className="rounded-xl bg-white/85 border border-cl-verde/20 p-3 flex items-center gap-3"
+                  >
+                    <div className="size-14 shrink-0 rounded-xl bg-cl-verde-escuro text-white flex flex-col items-center justify-center">
+                      <span className="text-[9px] uppercase opacity-80">
+                        Comanda
+                      </span>
+                      <span className="font-display text-xl leading-none tabular-nums">
+                        {g.comanda ?? "—"}
+                      </span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-display text-cl-verde-escuro leading-tight truncate">
+                        {g.clientes?.nome ?? "—"}
+                      </p>
+                      <p className="text-xs text-cl-cinza-texto">
+                        {mascararTelefoneBR(g.clientes?.telefone)}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
       )}
     </li>

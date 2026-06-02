@@ -52,11 +52,42 @@ function ConfirmacaoPage() {
             <span className="text-cl-laranja">{palpite.placar_b}</span>{" "}
             {palpite.time_b}
           </p>
+          {palpite.comanda != null && (
+            <p className="text-xs text-cl-cinza-texto mt-2">
+              Comanda{" "}
+              <span className="font-display text-cl-verde-escuro text-base">
+                #{palpite.comanda}
+              </span>
+            </p>
+          )}
         </div>
 
         <p className="mt-6 font-display text-cl-verde-escuro text-lg">
           Aguarde o resultado. Boa sorte!
         </p>
+
+        <div className="mt-6 w-full rounded-2xl bg-cl-verde-claro/30 border border-cl-verde/30 p-4 text-left">
+          <p className="font-display text-cl-verde-escuro text-sm uppercase tracking-wide mb-2">
+            Como funciona
+          </p>
+          <ul className="space-y-1.5">
+            {[
+              "1 aposta por jogo.",
+              "As apostas encerram no apito inicial.",
+              "1 chopp por comanda que acertar o placar no tempo regular.",
+              "É obrigatória a presença do titular para apostar e resgatar.",
+              "Para resgatar: apresente sua identidade (ou o app) e a comanda.",
+            ].map((r) => (
+              <li
+                key={r}
+                className="text-[13px] text-cl-verde-escuro flex gap-2 leading-snug"
+              >
+                <span className="text-cl-laranja shrink-0">•</span>
+                <span>{r}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
 
         <div className="mt-auto pt-8 w-full flex flex-col gap-2">
           <Button
