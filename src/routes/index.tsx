@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { LayoutCliente } from "@/components/site/LayoutCliente";
@@ -9,10 +9,51 @@ import {
   type LinhaClassificacao,
 } from "@/components/jogos/TabelaClassificacao";
 import type { Jogo } from "@/lib/jogos";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useJogosRealtime } from "@/hooks/useJogosRealtime";
-import { format } from "date-fns";
+import { format, differenceInCalendarDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Bandeira } from "@/components/jogos/Bandeira";
+import { ChevronRight, Info, UtensilsCrossed } from "lucide-react";
+import { toast } from "sonner";
+
+/* ----------------------------- Config ----------------------------- */
+
+const COPA_INICIO = new Date("2026-06-11T00:00:00-03:00");
+const COPA_FIM = new Date("2026-07-19T23:59:59-03:00");
+
+const CARDAPIO = {
+  brasilia: "https://www.hubt.com.br/boteco-caju-limao/",
+  saoPaulo: "https://www.hubt.com.br/boteco-caju-limao/2",
+} as const;
+
+const COLUNAS =
+  "id,numero_jogo,fase,grupo,rodada,data_hora_inicio,time_a,codigo_a,time_b,codigo_b,estadio,cidade,pais_sede,status,placar_a,placar_b,palpites_encerrados,premio_descricao,premio_imagem_url,envolve_brasil";
+
+type Aba = "visao" | "partidas" | "classificacao" | "eliminatoria";
+const ABAS: { id: Aba; label: string }[] = [
+  { id: "visao", label: "Visão geral" },
+  { id: "partidas", label: "Partidas" },
+  { id: "classificacao", label: "Classificação" },
+  { id: "eliminatoria", label: "Fase eliminatória" },
+];
+
+/* ----------------------------- Route ----------------------------- */
+
+type Search = { aba: Aba };
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -25,38 +66,332 @@ export const Route = createFileRoute("/")({
       },
     ],
   }),
+  validateSearch: (s: Record<string, unknown>): Search => {
+    const aba = s.aba as Aba | undefined;
+    return {
+      aba:
+        aba === "partidas" ||
+        aba === "classificacao" ||
+        aba === "eliminatoria"
+          ? aba
+          : "visao",
+    };
+  },
   component: HomeCliente,
 });
 
-const COLUNAS =
-  "id,numero_jogo,fase,grupo,data_hora_inicio,time_a,codigo_a,time_b,codigo_b,estadio,cidade,pais_sede,status,placar_a,placar_b,palpites_encerrados,premio_descricao,premio_imagem_url,envolve_brasil";
+/* ----------------------------- Home ----------------------------- */
 
 function HomeCliente() {
   useJogosRealtime();
+  const { aba } = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
 
-  const grupos = useQuery({
-    queryKey: ["home", "grupos"],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("fn_grupos");
-      if (error) throw error;
-      const lista = (data ?? [])
-        .map((r: { grupo?: string } | string) =>
-          typeof r === "string" ? r : (r.grupo ?? ""),
-        )
-        .filter(Boolean) as string[];
-      return Array.from(new Set(lista)).sort();
-    },
-  });
+  function setAba(a: Aba) {
+    navigate({ search: { aba: a }, replace: true });
+  }
 
-  const classificacao = useQuery({
-    queryKey: ["home", "classificacao"],
+  return (
+    <LayoutCliente>
+      <h1 className="sr-only">Bolão Caju Limão</h1>
+      <TabBar ativa={aba} onChange={setAba} />
+
+      <div className="mt-3">
+        {aba === "visao" && <AbaVisaoGeral />}
+        {aba === "partidas" && <AbaPartidas />}
+        {aba === "classificacao" && <AbaClassificacao />}
+        {aba === "eliminatoria" && <AbaEliminatoria />}
+      </div>
+    </LayoutCliente>
+  );
+}
+
+/* ----------------------------- TabBar ----------------------------- */
+
+function TabBar({ ativa, onChange }: { ativa: Aba; onChange: (a: Aba) => void }) {
+  return (
+    <div
+      role="tablist"
+      aria-label="Seções"
+      className="sticky top-[52px] z-20 -mx-4 px-4 glass-sticky"
+    >
+      <div className="flex gap-1 overflow-x-auto no-scrollbar">
+        {ABAS.map((t) => {
+          const isAtiva = t.id === ativa;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={isAtiva}
+              data-active={isAtiva}
+              onClick={() => onChange(t.id)}
+              className="tab-underline whitespace-nowrap"
+            >
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* =============================================================== */
+/*                       ABA 1 — VISÃO GERAL                        */
+/* =============================================================== */
+
+function AbaVisaoGeral() {
+  const hoje = new Date();
+  const antes = hoje < COPA_INICIO;
+  const durante = hoje >= COPA_INICIO && hoje <= COPA_FIM;
+  const diasFaltam = Math.max(
+    0,
+    differenceInCalendarDays(COPA_INICIO, hoje),
+  );
+  const progresso = clamp(
+    (hoje.getTime() - COPA_INICIO.getTime()) /
+      (COPA_FIM.getTime() - COPA_INICIO.getTime()),
+    0,
+    1,
+  );
+
+  // jogo "de agora" = aberto e dentro de janela curta (palpites não encerrados)
+  const jogoAgora = useQuery({
+    queryKey: ["home", "jogo-agora"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("fn_classificacao");
+      const agora = new Date().toISOString();
+      const limite = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+      const { data, error } = await supabase
+        .from("jogos")
+        .select(COLUNAS)
+        .eq("palpites_encerrados", false)
+        .gte("data_hora_inicio", new Date(Date.now() - 30 * 60 * 1000).toISOString())
+        .lte("data_hora_inicio", limite)
+        .order("data_hora_inicio", { ascending: true })
+        .limit(1);
       if (error) throw error;
-      return (data ?? []) as LinhaClassificacao[];
+      return ((data ?? []) as Jogo[])[0] ?? null;
     },
     refetchInterval: 60_000,
   });
+
+  const [cardapioAberto, setCardapioAberto] = useState(false);
+
+  return (
+    <div className="space-y-5">
+      {/* Hero */}
+      <section
+        className="relative overflow-hidden rounded-3xl glass px-5 pt-6 pb-7 text-center"
+        data-textura="hero"
+      >
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10 opacity-[0.06] pointer-events-none"
+          style={{
+            backgroundImage: "url('/assets/16-textura-geometrica.png')",
+            backgroundSize: "260px",
+            backgroundRepeat: "repeat",
+          }}
+        />
+        <img
+          src="/assets/05-logo-com-adornos-emblema.png"
+          alt="Caju Limão"
+          className="mx-auto h-24 w-auto"
+          onError={(e) => {
+            const img = e.currentTarget as HTMLImageElement;
+            if (!img.dataset.fb) {
+              img.dataset.fb = "1";
+              img.src = "/assets/02-logo-vertical-verde.png";
+            } else {
+              img.style.display = "none";
+            }
+          }}
+        />
+        <p className="mt-2 font-display text-xl text-cl-verde-escuro">
+          Bolão Caju Limão
+        </p>
+        <p className="text-[12px] text-cl-cinza-texto uppercase tracking-wider">
+          Copa do Mundo FIFA 2026
+        </p>
+      </section>
+
+      {/* Estado da Copa */}
+      <section className="glass rounded-3xl p-5">
+        {antes && (
+          <div className="text-center">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-cl-cinza-texto">
+              Contagem regressiva
+            </p>
+            <p className="mt-1 font-display text-cl-verde-escuro leading-none tabular-nums">
+              <span className="text-5xl font-bold">{diasFaltam}</span>
+              <span className="text-base ml-2">
+                {diasFaltam === 1 ? "dia" : "dias"}
+              </span>
+            </p>
+            <p className="mt-1 text-sm text-cl-cinza-texto">
+              para a Copa começar
+            </p>
+            <p className="mt-3 text-[11px] uppercase tracking-wider text-cl-cinza-texto">
+              11 jun → 19 jul 2026
+            </p>
+          </div>
+        )}
+
+        {durante && (
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-cl-cinza-texto text-center">
+              A Copa está rolando
+            </p>
+            <div className="mt-3 relative h-2 rounded-full bg-cl-verde/10 overflow-hidden">
+              <div
+                className="absolute inset-y-0 left-0 bg-cl-verde rounded-full transition-all"
+                style={{ width: `${progresso * 100}%` }}
+              />
+              <div
+                className="absolute top-1/2 -translate-y-1/2 size-3 rounded-full bg-cl-laranja border-2 border-white shadow"
+                style={{
+                  left: `calc(${progresso * 100}% - 6px)`,
+                }}
+                aria-hidden
+              />
+            </div>
+            <div className="mt-2 flex justify-between text-[11px] text-cl-cinza-texto num">
+              <span>11 jun</span>
+              <span>19 jul</span>
+            </div>
+          </div>
+        )}
+
+        {!antes && !durante && (
+          <div className="text-center">
+            <p className="font-display text-xl text-cl-verde-escuro">
+              Copa encerrada
+            </p>
+            <p className="text-sm text-cl-cinza-texto mt-1">
+              Obrigado por palpitar com a gente!
+            </p>
+          </div>
+        )}
+      </section>
+
+      {/* Jogo de agora (se houver) */}
+      {jogoAgora.data && (
+        <section>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="pulse-dot" aria-hidden />
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-cl-laranja">
+              Jogo de agora
+            </p>
+          </div>
+          <CardJogoAberto jogo={jogoAgora.data} />
+        </section>
+      )}
+
+      {/* Botões */}
+      <section className="grid grid-cols-1 gap-3">
+        <Link
+          to="/sobre-copa"
+          className="glass rounded-2xl p-4 flex items-center gap-3 card-press"
+        >
+          <span className="size-10 rounded-full bg-cl-verde/10 flex items-center justify-center text-cl-verde">
+            <Info className="size-5" />
+          </span>
+          <span className="flex-1">
+            <span className="block font-display text-lg text-cl-verde-escuro leading-tight">
+              Sobre a Copa
+            </span>
+            <span className="block text-xs text-cl-cinza-texto">
+              Regras do bolão e da competição
+            </span>
+          </span>
+          <ChevronRight className="size-5 text-cl-cinza-texto" />
+        </Link>
+
+        <button
+          type="button"
+          onClick={() => setCardapioAberto(true)}
+          className="glass rounded-2xl p-4 flex items-center gap-3 card-press text-left"
+        >
+          <span className="size-10 rounded-full bg-cl-laranja/20 flex items-center justify-center text-cl-verde-escuro">
+            <UtensilsCrossed className="size-5" />
+          </span>
+          <span className="flex-1">
+            <span className="block font-display text-lg text-cl-verde-escuro leading-tight">
+              Cardápio
+            </span>
+            <span className="block text-xs text-cl-cinza-texto">
+              Escolha a unidade Caju Limão
+            </span>
+          </span>
+          <ChevronRight className="size-5 text-cl-cinza-texto" />
+        </button>
+      </section>
+
+      <EscolhaUnidadeDialog
+        aberto={cardapioAberto}
+        onMudou={setCardapioAberto}
+      />
+    </div>
+  );
+}
+
+function EscolhaUnidadeDialog({
+  aberto,
+  onMudou,
+}: {
+  aberto: boolean;
+  onMudou: (v: boolean) => void;
+}) {
+  function abrir(url: string) {
+    onMudou(false);
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+  return (
+    <Dialog open={aberto} onOpenChange={onMudou}>
+      <DialogContent className="max-w-sm rounded-3xl">
+        <DialogHeader>
+          <DialogTitle className="font-display text-cl-verde-escuro text-xl">
+            Escolha sua unidade
+          </DialogTitle>
+          <DialogDescription>
+            O cardápio abrirá em uma nova aba.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3 mt-2">
+          <button
+            type="button"
+            onClick={() => abrir(CARDAPIO.brasilia)}
+            className="w-full text-left p-4 rounded-2xl border border-cl-verde/20 bg-white hover:bg-cl-verde/5 transition-colors"
+          >
+            <p className="font-semibold text-cl-verde-escuro">Brasília</p>
+            <p className="text-xs text-cl-cinza-texto mt-0.5">
+              Asa Norte / Sudoeste
+            </p>
+          </button>
+          <button
+            type="button"
+            onClick={() => abrir(CARDAPIO.saoPaulo)}
+            className="w-full text-left p-4 rounded-2xl border border-cl-verde/20 bg-white hover:bg-cl-verde/5 transition-colors"
+          >
+            <p className="font-semibold text-cl-verde-escuro">São Paulo</p>
+            <p className="text-xs text-cl-cinza-texto mt-0.5">Itaim</p>
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* =============================================================== */
+/*                        ABA 2 — PARTIDAS                          */
+/* =============================================================== */
+
+type FiltroPartidas = "data" | "grupo" | "rodada" | "time";
+
+function AbaPartidas() {
+  const [filtro, setFiltro] = useState<FiltroPartidas>("data");
+  const [time, setTime] = useState<string>("");
 
   const jogos = useQuery({
     queryKey: ["home", "jogos-todos"],
@@ -65,177 +400,70 @@ function HomeCliente() {
         .from("jogos")
         .select(COLUNAS)
         .order("data_hora_inicio", { ascending: true });
-      if (error) throw error;
+      if (error) {
+        toast.error("Não foi possível carregar os jogos.");
+        throw error;
+      }
       return (data ?? []) as Jogo[];
     },
     refetchInterval: 30_000,
   });
 
-  return (
-    <LayoutCliente>
-      <h1 className="sr-only">Bolão Caju Limão</h1>
-
-      {/* Bloco 1: carrossel de grupos */}
-      <section className="mb-4">
-        <HeaderClassificacao titulo="Grupos" />
-        <CarrosselGrupos
-          grupos={grupos.data ?? []}
-          classificacao={classificacao.data ?? []}
-          carregando={grupos.isLoading || classificacao.isLoading}
-        />
-      </section>
-
-      {/* Bloco 2: jogos em ordem cronológica */}
-      <section className="mt-6">
-        <HeaderClassificacao titulo="Jogos" />
-        {jogos.isLoading ? (
-          <SkeletonList />
-        ) : (
-          <ListaJogosCronologica jogos={jogos.data ?? []} />
-        )}
-      </section>
-    </LayoutCliente>
-  );
-}
-
-/* ----------------------------- Carrossel de Grupos ----------------------------- */
-
-function CarrosselGrupos({
-  grupos,
-  classificacao,
-  carregando,
-}: {
-  grupos: string[];
-  classificacao: LinhaClassificacao[];
-  carregando: boolean;
-}) {
-  const [ativo, setAtivo] = useState<string | null>(null);
-  const swiperRef = useRef<HTMLDivElement | null>(null);
-  const slideRefs = useRef<Map<string, HTMLElement | null>>(new Map());
-  const scrollProgrammatic = useRef(false);
-
-  const classPorGrupo = useMemo(() => {
-    const m = new Map<string, LinhaClassificacao[]>();
-    for (const c of classificacao) {
-      if (!m.has(c.grupo)) m.set(c.grupo, []);
-      m.get(c.grupo)!.push(c);
-    }
-    return m;
-  }, [classificacao]);
-
-  useEffect(() => {
-    if (!ativo && grupos.length) setAtivo(grupos[0]);
-  }, [grupos, ativo]);
-
-  function irPara(g: string) {
-    setAtivo(g);
-    const el = slideRefs.current.get(g);
-    if (el && swiperRef.current) {
-      scrollProgrammatic.current = true;
-      swiperRef.current.scrollTo({ left: el.offsetLeft, behavior: "smooth" });
-      window.setTimeout(() => {
-        scrollProgrammatic.current = false;
-      }, 600);
-    }
-  }
-
-  // Sincroniza pílula ativa com o slide visível durante o swipe.
-  useEffect(() => {
-    const root = swiperRef.current;
-    if (!root || !grupos.length) return;
-    const obs = new IntersectionObserver(
-      (entries) => {
-        if (scrollProgrammatic.current) return;
-        const visivel = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (visivel) {
-          const g = (visivel.target as HTMLElement).dataset.grupo;
-          if (g && g !== ativo) setAtivo(g);
-        }
-      },
-      { root, threshold: [0.55, 0.75] },
-    );
-    slideRefs.current.forEach((el) => el && obs.observe(el));
-    return () => obs.disconnect();
-  }, [grupos, ativo]);
-
-  if (carregando) {
-    return (
-      <div className="rounded-3xl bg-white/40 border border-white/60 p-4 animate-pulse h-72" />
-    );
-  }
-
-  if (!grupos.length) {
-    return (
-      <div className="rounded-3xl border-2 border-dashed border-cl-verde/40 p-6 text-center">
-        <p className="text-sm text-cl-cinza-texto">
-          Nenhum grupo cadastrado ainda.
-        </p>
-      </div>
-    );
-  }
-
-  const grupoAtivo = ativo ?? grupos[0];
+  const filtros: { id: FiltroPartidas; label: string }[] = [
+    { id: "data", label: "Por data" },
+    { id: "grupo", label: "Por grupo" },
+    { id: "rodada", label: "Por rodada" },
+    { id: "time", label: "Por time" },
+  ];
 
   return (
-    <div>
-      {/* Seletor de grupos: pílulas modernas (sem swipe) */}
-      <div
-        className="-mx-4 px-4 mb-4 overflow-x-auto no-scrollbar"
-        style={{ scrollbarWidth: "none" }}
-      >
-        <div role="tablist" aria-label="Grupos" className="flex gap-2 w-max pb-1">
-          {grupos.map((g) => {
-            const isAtivo = g === grupoAtivo;
+    <div className="space-y-4">
+      <div className="-mx-4 px-4 overflow-x-auto no-scrollbar">
+        <div role="tablist" aria-label="Filtros" className="flex gap-2 w-max">
+          {filtros.map((f) => {
+            const isAtivo = filtro === f.id;
             return (
               <button
-                key={g}
+                key={f.id}
                 type="button"
                 role="tab"
                 aria-selected={isAtivo}
-                onClick={() => irPara(g)}
+                onClick={() => setFiltro(f.id)}
                 className={
                   isAtivo
-                    ? "px-4 py-2 rounded-full bg-cl-verde text-white text-sm font-semibold shadow-sm whitespace-nowrap transition-colors"
-                    : "px-4 py-2 rounded-full bg-white/60 text-cl-verde text-sm font-semibold border border-cl-verde/15 whitespace-nowrap hover:bg-white/80 transition-colors"
+                    ? "px-4 py-2 rounded-full bg-cl-verde text-white text-sm font-semibold shadow-sm whitespace-nowrap"
+                    : "px-4 py-2 rounded-full bg-white/60 text-cl-verde text-sm font-semibold border border-cl-verde/15 whitespace-nowrap"
                 }
               >
-                Grupo {g}
+                {f.label}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Swipe horizontal pelos grupos — sem indicadores visuais (as pílulas
-          servem de marcador). Snap por grupo, scrollbar oculta. */}
-      <div
-        ref={swiperRef}
-        className="-mx-4 flex overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth touch-pan-x overscroll-x-contain"
-        style={{ scrollbarWidth: "none" }}
-      >
-        {grupos.map((g) => (
-          <section
-            key={g}
-            data-grupo={g}
-            ref={(el) => {
-              slideRefs.current.set(g, el);
-            }}
-            className="snap-center shrink-0 w-full px-4"
-          >
-            <TabelaClassificacao
-              grupo={g}
-              linhas={classPorGrupo.get(g) ?? []}
-            />
-          </section>
-        ))}
-      </div>
+      {jogos.isLoading ? (
+        <SkeletonList />
+      ) : jogos.isError ? (
+        <EstadoErro mensagem="Falha ao carregar partidas." />
+      ) : (jogos.data ?? []).length === 0 ? (
+        <EstadoVazio mensagem="Nenhum jogo cadastrado." />
+      ) : filtro === "data" ? (
+        <PartidasPorData jogos={jogos.data ?? []} />
+      ) : filtro === "grupo" ? (
+        <PartidasPorGrupo jogos={jogos.data ?? []} />
+      ) : filtro === "rodada" ? (
+        <PartidasPorRodada jogos={jogos.data ?? []} />
+      ) : (
+        <PartidasPorTime
+          jogos={jogos.data ?? []}
+          time={time}
+          onTime={setTime}
+        />
+      )}
     </div>
   );
 }
-
-/* --------------------------- Lista cronológica de jogos --------------------------- */
 
 function chaveDia(iso: string): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -263,45 +491,21 @@ function rotuloDia(iso: string, hojeKey: string): string {
   );
 }
 
-function ListaJogosCronologica({ jogos }: { jogos: Jogo[] }) {
+function PartidasPorData({ jogos }: { jogos: Jogo[] }) {
   const hojeKey = chaveHoje();
-
-  const { passados, hojeEFuturos } = useMemo(() => {
-    const p: Jogo[] = [];
-    const f: Jogo[] = [];
-    for (const j of jogos) {
-      const k = chaveDia(j.data_hora_inicio);
-      if (k < hojeKey) p.push(j);
-      else f.push(j);
-    }
-    return { passados: p, hojeEFuturos: f };
-  }, [jogos, hojeKey]);
-
-  const gruposFuturos = useMemo(() => {
+  const grupos = useMemo(() => {
     const m = new Map<string, Jogo[]>();
-    for (const j of hojeEFuturos) {
+    for (const j of jogos) {
       const k = chaveDia(j.data_hora_inicio);
       if (!m.has(k)) m.set(k, []);
       m.get(k)!.push(j);
     }
     return Array.from(m.entries());
-  }, [hojeEFuturos]);
-
-  const [verPassados, setVerPassados] = useState(false);
-
-  if (jogos.length === 0) {
-    return (
-      <div className="rounded-2xl border-2 border-dashed border-cl-verde/40 p-6 text-center">
-        <p className="text-sm text-cl-cinza-texto">
-          Nenhum jogo cadastrado ainda.
-        </p>
-      </div>
-    );
-  }
+  }, [jogos]);
 
   return (
     <div className="space-y-6">
-      {gruposFuturos.map(([k, lista]) => {
+      {grupos.map(([k, lista]) => {
         const ehHoje = k === hojeKey;
         return (
           <div key={k}>
@@ -327,58 +531,354 @@ function ListaJogosCronologica({ jogos }: { jogos: Jogo[] }) {
           </div>
         );
       })}
+    </div>
+  );
+}
 
-      {passados.length > 0 && (
-        <div>
-          <button
-            type="button"
-            onClick={() => setVerPassados((v) => !v)}
-            className="w-full text-sm font-semibold text-cl-verde-escuro underline underline-offset-4 decoration-cl-laranja py-2"
-          >
-            {verPassados
-              ? "Esconder jogos passados"
-              : `Ver ${passados.length} ${passados.length === 1 ? "jogo passado" : "jogos passados"}`}
-          </button>
-          {verPassados && (
-            <div className="space-y-6 mt-3 opacity-90">
-              {Array.from(
-                passados.reduce((m, j) => {
-                  const k = chaveDia(j.data_hora_inicio);
-                  if (!m.has(k)) m.set(k, []);
-                  m.get(k)!.push(j);
-                  return m;
-                }, new Map<string, Jogo[]>()),
-              )
-                .reverse()
-                .map(([k, lista]) => (
-                  <div key={k}>
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-cl-cinza-texto mb-2">
-                      {rotuloDia(lista[0].data_hora_inicio, hojeKey)}
-                    </p>
-                    <div className="space-y-1.5">
-                      {lista.map((j) => (
-                        <CardJogoAberto key={j.id} jogo={j} />
-                      ))}
-                    </div>
-                  </div>
-                ))}
-            </div>
-          )}
+function PartidasPorGrupo({ jogos }: { jogos: Jogo[] }) {
+  const grupos = useMemo(() => {
+    const m = new Map<string, Jogo[]>();
+    for (const j of jogos) {
+      const g = j.grupo ?? "—";
+      if (!m.has(g)) m.set(g, []);
+      m.get(g)!.push(j);
+    }
+    return Array.from(m.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [jogos]);
+
+  return (
+    <div className="space-y-6">
+      {grupos.map(([g, lista]) => (
+        <div key={g}>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-cl-verde-escuro mb-2">
+            Grupo {g}
+          </p>
+          <div className="space-y-1.5">
+            {lista.map((j) => (
+              <CardJogoAberto key={j.id} jogo={j} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PartidasPorRodada({ jogos }: { jogos: Jogo[] }) {
+  const rodadas = useMemo(() => {
+    const m = new Map<string, Jogo[]>();
+    for (const j of jogos) {
+      const k = j.rodada != null ? String(j.rodada) : "—";
+      if (!m.has(k)) m.set(k, []);
+      m.get(k)!.push(j);
+    }
+    return Array.from(m.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [jogos]);
+
+  return (
+    <div className="space-y-6">
+      {rodadas.map(([r, lista]) => (
+        <div key={r}>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-cl-verde-escuro mb-2">
+            {r === "—" ? "Sem rodada" : `Rodada ${r}`}
+          </p>
+          <div className="space-y-1.5">
+            {lista.map((j) => (
+              <CardJogoAberto key={j.id} jogo={j} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PartidasPorTime({
+  jogos,
+  time,
+  onTime,
+}: {
+  jogos: Jogo[];
+  time: string;
+  onTime: (s: string) => void;
+}) {
+  const times = useMemo(() => {
+    const s = new Map<string, { codigo: string | null; nome: string }>();
+    for (const j of jogos) {
+      if (!s.has(j.time_a)) s.set(j.time_a, { codigo: j.codigo_a, nome: j.time_a });
+      if (!s.has(j.time_b)) s.set(j.time_b, { codigo: j.codigo_b, nome: j.time_b });
+    }
+    return Array.from(s.values()).sort((a, b) => a.nome.localeCompare(b.nome));
+  }, [jogos]);
+
+  const filtrados = useMemo(
+    () =>
+      time
+        ? jogos.filter((j) => j.time_a === time || j.time_b === time)
+        : [],
+    [jogos, time],
+  );
+
+  return (
+    <div className="space-y-4">
+      <select
+        value={time}
+        onChange={(e) => onTime(e.target.value)}
+        className="w-full rounded-2xl border border-cl-verde/15 bg-white px-4 py-3 text-sm font-semibold text-cl-verde-escuro"
+      >
+        <option value="">Selecione uma seleção…</option>
+        {times.map((t) => (
+          <option key={t.nome} value={t.nome}>
+            {t.nome}
+          </option>
+        ))}
+      </select>
+
+      {time && filtrados.length === 0 && (
+        <EstadoVazio mensagem="Sem jogos para este time." />
+      )}
+
+      <div className="space-y-1.5">
+        {filtrados.map((j) => (
+          <CardJogoAberto key={j.id} jogo={j} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* =============================================================== */
+/*                      ABA 3 — CLASSIFICAÇÃO                       */
+/* =============================================================== */
+
+function AbaClassificacao() {
+  const grupos = useQuery({
+    queryKey: ["home", "grupos"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("fn_grupos");
+      if (error) {
+        toast.error("Não foi possível carregar os grupos.");
+        throw error;
+      }
+      const lista = (data ?? [])
+        .map((r: { grupo?: string } | string) =>
+          typeof r === "string" ? r : (r.grupo ?? ""),
+        )
+        .filter(Boolean) as string[];
+      return Array.from(new Set(lista)).sort();
+    },
+  });
+
+  const classificacao = useQuery({
+    queryKey: ["home", "classificacao"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("fn_classificacao");
+      if (error) {
+        toast.error("Não foi possível carregar a classificação.");
+        throw error;
+      }
+      return (data ?? []) as LinhaClassificacao[];
+    },
+    refetchInterval: 60_000,
+  });
+
+  const classPorGrupo = useMemo(() => {
+    const m = new Map<string, LinhaClassificacao[]>();
+    for (const c of classificacao.data ?? []) {
+      if (!m.has(c.grupo)) m.set(c.grupo, []);
+      m.get(c.grupo)!.push(c);
+    }
+    return m;
+  }, [classificacao.data]);
+
+  if (grupos.isLoading || classificacao.isLoading) {
+    return <SkeletonClassificacao />;
+  }
+
+  return (
+    <div className="space-y-5">
+      <HeaderClassificacao titulo="Classificação" />
+      <div className="space-y-4">
+        {(grupos.data ?? []).map((g) => (
+          <TabelaClassificacao
+            key={g}
+            grupo={g}
+            linhas={classPorGrupo.get(g) ?? []}
+          />
+        ))}
+      </div>
+
+      <Accordion type="single" collapsible className="glass rounded-2xl px-4">
+        <AccordionItem value="regras" className="border-none">
+          <AccordionTrigger className="text-sm font-semibold text-cl-verde-escuro hover:no-underline">
+            Regras de desempate
+          </AccordionTrigger>
+          <AccordionContent>
+            <p className="text-sm text-cl-cinza-texto mb-2">
+              Em empate de pontos, a ordem de desempate na fase de grupos é:
+            </p>
+            <ol className="list-decimal pl-5 space-y-1 text-sm text-cl-verde-escuro">
+              <li>Saldo de gols em todos os jogos do grupo</li>
+              <li>Gols marcados em todos os jogos do grupo</li>
+              <li>
+                Pontos nos confrontos diretos entre as equipes empatadas
+              </li>
+              <li>Saldo de gols nos confrontos diretos</li>
+              <li>Gols marcados nos confrontos diretos</li>
+              <li>Pontos de fair play (cartões)</li>
+              <li>Sorteio / posição no Ranking Mundial da FIFA</li>
+            </ol>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+    </div>
+  );
+}
+
+/* =============================================================== */
+/*                  ABA 4 — FASE ELIMINATÓRIA                       */
+/* =============================================================== */
+
+type Fase =
+  | "round_de_32"
+  | "oitavas"
+  | "quartas"
+  | "semifinal"
+  | "final";
+
+const SUBABAS: { id: Fase; label: string }[] = [
+  { id: "round_de_32", label: "32-avos" },
+  { id: "oitavas", label: "Oitavas" },
+  { id: "quartas", label: "Quartas" },
+  { id: "semifinal", label: "Semis" },
+  { id: "final", label: "Final" },
+];
+
+function AbaEliminatoria() {
+  const [fase, setFase] = useState<Fase>("round_de_32");
+
+  const jogos = useQuery({
+    queryKey: ["home", "jogos-todos"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("jogos")
+        .select(COLUNAS)
+        .order("data_hora_inicio", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as Jogo[];
+    },
+  });
+
+  const filtrados = useMemo(() => {
+    const lista = jogos.data ?? [];
+    if (fase === "semifinal") {
+      return lista.filter(
+        (j) => j.fase === "semifinal" || j.fase === "disputa_terceiro",
+      );
+    }
+    return lista.filter((j) => j.fase === fase);
+  }, [jogos.data, fase]);
+
+  const mostrarConfrontos = fase === "round_de_32";
+
+  return (
+    <div className="space-y-4">
+      <div className="-mx-4 px-4 overflow-x-auto no-scrollbar">
+        <div className="flex gap-2 w-max">
+          {SUBABAS.map((s) => {
+            const isAtiva = fase === s.id;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setFase(s.id)}
+                aria-selected={isAtiva}
+                className={
+                  isAtiva
+                    ? "px-4 py-2 rounded-full bg-cl-verde text-white text-sm font-semibold shadow-sm whitespace-nowrap"
+                    : "px-4 py-2 rounded-full bg-white/60 text-cl-verde text-sm font-semibold border border-cl-verde/15 whitespace-nowrap"
+                }
+              >
+                {s.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {jogos.isLoading ? (
+        <SkeletonList />
+      ) : filtrados.length === 0 ? (
+        <EstadoVazio mensagem="Sem jogos cadastrados nesta fase." />
+      ) : (
+        <div className="space-y-1.5">
+          {filtrados.map((j) => (
+            <CardEliminatoria
+              key={j.id}
+              jogo={j}
+              comConfronto={mostrarConfrontos}
+            />
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
+function CardEliminatoria({
+  jogo,
+  comConfronto,
+}: {
+  jogo: Jogo;
+  comConfronto: boolean;
+}) {
+  const data = new Date(jogo.data_hora_inicio);
+  const dia = format(data, "dd 'de' MMM • HH'h'mm", { locale: ptBR });
+
   return (
-    <h2 className="font-display text-cl-verde-escuro text-base mb-3 flex items-center gap-3 uppercase tracking-wider">
-      <span className="block h-px flex-1 bg-cl-verde/25" aria-hidden />
-      <span>{children}</span>
-      <span className="block h-px flex-1 bg-cl-verde/25" aria-hidden />
-    </h2>
+    <article className="glass rounded-3xl p-4">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-cl-cinza-texto num">
+          {dia}
+        </span>
+        {jogo.estadio && (
+          <span className="text-[10px] text-cl-cinza-texto truncate max-w-[55%] text-right">
+            {jogo.estadio}
+            {jogo.cidade ? ` · ${jogo.cidade}` : ""}
+          </span>
+        )}
+      </div>
+
+      {comConfronto ? (
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <Bandeira codigo={jogo.codigo_a} tamanho={20} />
+            <span className="text-sm font-semibold text-cl-verde-escuro truncate">
+              {jogo.time_a}
+            </span>
+          </div>
+          <span className="text-[10px] uppercase tracking-wider text-cl-cinza-texto">
+            x
+          </span>
+          <div className="flex items-center gap-2 min-w-0 flex-1 justify-end">
+            <span className="text-sm font-semibold text-cl-verde-escuro truncate text-right">
+              {jogo.time_b}
+            </span>
+            <Bandeira codigo={jogo.codigo_b} tamanho={20} />
+          </div>
+        </div>
+      ) : (
+        <p className="text-sm text-cl-cinza-texto italic">
+          Definido após os jogos
+        </p>
+      )}
+    </article>
   );
 }
+
+/* =============================================================== */
+/*                         Estados auxiliares                       */
+/* =============================================================== */
 
 function SkeletonList() {
   return (
@@ -386,9 +886,39 @@ function SkeletonList() {
       {[0, 1, 2].map((i) => (
         <div
           key={i}
-          className="h-32 rounded-2xl bg-card border border-border animate-pulse"
+          className="h-20 rounded-3xl glass animate-pulse"
         />
       ))}
     </div>
   );
+}
+
+function SkeletonClassificacao() {
+  return (
+    <div className="space-y-4">
+      {[0, 1, 2].map((i) => (
+        <div key={i} className="h-52 rounded-3xl glass animate-pulse" />
+      ))}
+    </div>
+  );
+}
+
+function EstadoVazio({ mensagem }: { mensagem: string }) {
+  return (
+    <div className="rounded-3xl border-2 border-dashed border-cl-verde/30 p-6 text-center">
+      <p className="text-sm text-cl-cinza-texto">{mensagem}</p>
+    </div>
+  );
+}
+
+function EstadoErro({ mensagem }: { mensagem: string }) {
+  return (
+    <div className="rounded-3xl border border-cl-erro/30 bg-cl-erro/5 p-4 text-center">
+      <p className="text-sm text-cl-erro font-medium">{mensagem}</p>
+    </div>
+  );
+}
+
+function clamp(n: number, lo: number, hi: number) {
+  return Math.max(lo, Math.min(hi, n));
 }
