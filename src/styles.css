@@ -126,22 +126,30 @@
     font-feature-settings: "cv11", "ss01";
   }
 
-  /* Fundo global: arte de azulejos Caju sutil sobre tom areia.
-     Aplicado no body para cobrir 100% das telas (cliente e admin). */
+  /* Fundo base claro, levemente esverdeado. A textura Caju vem por cima
+     como uma camada fixa atrás de todo o conteúdo (ver ::before abaixo),
+     com opacidade muito baixa — um "sussurro" da identidade. */
   body {
-    background-color: var(--cl-cinza-bg);
-    background-image:
-      linear-gradient(rgba(255,255,255,0.55), rgba(255,255,255,0.55)),
-      url("/assets/16-textura-geometrica.png");
-    background-repeat: repeat;
-    background-size: auto, 320px;
-    background-attachment: fixed, fixed;
+    background-color: #F7F5EF;
+    position: relative;
   }
-  body[data-textura="floral"] {
-    background-image:
-      linear-gradient(rgba(255,255,255,0.6), rgba(255,255,255,0.6)),
-      url("/assets/15-textura-floral.png");
-    background-size: auto, 360px;
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: url("/assets/16-textura-geometrica.png");
+    background-repeat: repeat;
+    background-size: 360px;
+    opacity: 0.045;
+    /* Tinge a textura no verde Caju discreto */
+    filter: saturate(0.6);
+  }
+  body[data-textura="floral"]::before {
+    background-image: url("/assets/15-textura-floral.png");
+    background-size: 400px;
+    opacity: 0.05;
   }
 
   h1, h2, h3, .font-display {
@@ -157,29 +165,28 @@
 
 @layer utilities {
   .glass {
-    background-color: rgba(255, 255, 255, 0.55);
-    backdrop-filter: blur(16px) saturate(1.3);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow:
-      0 8px 30px rgba(28, 59, 22, 0.08),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    position: relative;
+    background-color: rgba(255, 255, 255, 0.80);
+    backdrop-filter: blur(12px) saturate(1.15);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
   }
   /* Vidro mais fechado para tabelas e blocos com muita informação numérica. */
   .glass-data {
-    background-color: rgba(255, 255, 255, 0.82);
-    backdrop-filter: blur(10px) saturate(1.2);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 6px 20px rgba(28, 59, 22, 0.07);
+    background-color: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(10px) saturate(1.1);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   }
   /* Vidro fino (sticky / header / tabbar). */
   .glass-sticky {
-    background-color: rgba(255, 255, 255, 0.65);
-    backdrop-filter: blur(18px) saturate(1.4);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 1px 0 rgba(28, 59, 22, 0.05);
+    background-color: rgba(247, 245, 239, 0.82);
+    backdrop-filter: blur(14px) saturate(1.2);
+    border-bottom: 1px solid rgba(28, 59, 22, 0.06);
   }
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .glass, .glass-sticky { background-color: rgba(255, 255, 255, 0.94); }
+    .glass { background-color: rgba(255, 255, 255, 0.96); }
+    .glass-sticky { background-color: rgba(247, 245, 239, 0.96); }
     .glass-data { background-color: #fff; }
   }
   .glass-dark {
