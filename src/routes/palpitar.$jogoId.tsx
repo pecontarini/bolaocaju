@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCliente } from "@/store/cliente";
 import { type Jogo } from "@/lib/jogos";
 import { Bandeira } from "@/components/jogos/Bandeira";
+import { useJogosRealtime } from "@/hooks/useJogosRealtime";
 
 const COLUNAS =
   "id,numero_jogo,fase,grupo,data_hora_inicio,time_a,codigo_a,time_b,codigo_b,estadio,cidade,pais_sede,status,placar_a,placar_b,palpites_encerrados,premio_descricao,premio_imagem_url,envolve_brasil";
@@ -25,6 +26,7 @@ type GeoState =
   | { status: "error"; mensagem: string };
 
 function PalpitarJogoPage() {
+  useJogosRealtime();
   const { jogoId } = Route.useParams();
   const navigate = useNavigate();
   const cliente_id = useCliente((s) => s.cliente_id);

@@ -13,20 +13,36 @@ function horaBR(iso: string) {
 }
 
 export function CardJogoAberto({ jogo }: { jogo: Jogo }) {
+  const aoVivo =
+    jogo.placar_a !== null && jogo.placar_b !== null;
   return (
     <article className="glass card-press rounded-2xl overflow-hidden">
       <div className="px-4 pt-3 pb-1.5 flex items-center justify-between">
         <span className="text-[11px] font-semibold uppercase tracking-wider text-cl-cinza-texto tabular">
           {horaBR(jogo.data_hora_inicio)}
         </span>
-        <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider rounded-full px-2 py-0.5 bg-cl-verde-claro text-cl-verde-escuro font-semibold">
+        <span
+          className={`inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider rounded-full px-2 py-0.5 font-semibold ${
+            aoVivo
+              ? "bg-cl-laranja/20 text-cl-laranja"
+              : "bg-cl-verde-claro text-cl-verde-escuro"
+          }`}
+        >
           <span className="pulse-dot" aria-hidden />
-          Aberto
+          {aoVivo ? "Ao vivo" : "Aberto"}
         </span>
       </div>
       <div className="px-4 pt-1 pb-3 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
         <TimeMini nome={jogo.time_a} codigo={jogo.codigo_a} alinhar="end" />
-        <span className="font-display text-cl-cinza-texto text-2xl leading-none">×</span>
+        {aoVivo ? (
+          <span className="font-display text-cl-verde-escuro text-2xl leading-none tabular-nums px-2 py-1 rounded-lg bg-cl-verde-claro">
+            {jogo.placar_a}
+            <span className="text-cl-cinza-texto mx-1">×</span>
+            {jogo.placar_b}
+          </span>
+        ) : (
+          <span className="font-display text-cl-cinza-texto text-2xl leading-none">×</span>
+        )}
         <TimeMini nome={jogo.time_b} codigo={jogo.codigo_b} alinhar="start" />
       </div>
       {(jogo.estadio || jogo.cidade) && (
