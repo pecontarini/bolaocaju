@@ -23,9 +23,9 @@ type Props = {
 export function TabelaClassificacao({ grupo, linhas, className = "" }: Props) {
   return (
     <div
-      className={`rounded-2xl overflow-hidden glass-data ${className}`}
+      className={`rounded-3xl overflow-hidden glass-data ${className}`}
     >
-      <div className="px-3 py-1.5 bg-cl-verde-escuro flex items-center gap-2">
+      <div className="px-4 py-2 bg-cl-verde-escuro/95 flex items-center gap-2">
         <span
           className="inline-block size-1.5 rounded-full bg-cl-laranja"
           aria-hidden
