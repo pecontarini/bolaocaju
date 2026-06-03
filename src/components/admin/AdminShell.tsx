@@ -99,7 +99,7 @@ function TopbarMobile({ email }: { email: string }) {
   const [open, setOpen] = useState(false);
   return (
     <header className="md:hidden sticky top-0 z-30 p-3">
-      <div className="glass rounded-2xl flex items-center justify-between px-3 py-2">
+      <div className="glass-sticky rounded-2xl flex items-center justify-between px-3 py-2">
         <Link to="/admin" className="flex items-center">
           <img
             src="/assets/01-logo-horizontal-verde.png"
