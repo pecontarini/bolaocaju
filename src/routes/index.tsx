@@ -120,7 +120,7 @@ function HomeCliente() {
   }, [grupoInicial]);
 
   const swiperRef = useRef<HTMLDivElement | null>(null);
-  const slideRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
+  const slideRefs = useRef<Map<string, HTMLElement | null>>(new Map());
   const chipRefs = useRef<Map<string, HTMLButtonElement | null>>(new Map());
   const scrollProgrammatic = useRef(false);
 
