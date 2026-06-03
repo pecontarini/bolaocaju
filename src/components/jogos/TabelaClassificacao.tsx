@@ -40,13 +40,13 @@ export function TabelaClassificacao({ grupo, linhas, className = "" }: Props) {
             <th className="px-2 py-1.5 text-left font-medium w-6">#</th>
             <th className="px-1 py-1.5 text-left font-medium">Seleção</th>
             <th className="px-1.5 py-1.5 text-center font-medium w-7">J</th>
-            <th className="px-1.5 py-1.5 text-center font-medium w-7 hidden xs:table-cell">
+            <th className="px-1.5 py-1.5 text-center font-medium w-7">
               V
             </th>
-            <th className="px-1.5 py-1.5 text-center font-medium w-7 hidden xs:table-cell">
+            <th className="px-1.5 py-1.5 text-center font-medium w-7">
               E
             </th>
-            <th className="px-1.5 py-1.5 text-center font-medium w-7 hidden xs:table-cell">
+            <th className="px-1.5 py-1.5 text-center font-medium w-7">
               D
             </th>
             <th className="px-1.5 py-1.5 text-center font-medium w-8">SG</th>
@@ -90,13 +90,13 @@ export function TabelaClassificacao({ grupo, linhas, className = "" }: Props) {
                 <td className="px-1.5 py-1.5 text-center text-cl-cinza-texto">
                   {l.jogos}
                 </td>
-                <td className="px-1.5 py-1.5 text-center text-cl-cinza-texto hidden xs:table-cell">
+                <td className="px-1.5 py-1.5 text-center text-cl-cinza-texto">
                   {l.vitorias}
                 </td>
-                <td className="px-1.5 py-1.5 text-center text-cl-cinza-texto hidden xs:table-cell">
+                <td className="px-1.5 py-1.5 text-center text-cl-cinza-texto">
                   {l.empates}
                 </td>
-                <td className="px-1.5 py-1.5 text-center text-cl-cinza-texto hidden xs:table-cell">
+                <td className="px-1.5 py-1.5 text-center text-cl-cinza-texto">
                   {l.derrotas}
                 </td>
                 <td className="px-1.5 py-1.5 text-center text-cl-cinza-texto">
