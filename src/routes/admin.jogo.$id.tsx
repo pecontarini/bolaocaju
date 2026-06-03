@@ -14,6 +14,7 @@ import {
   Radio,
   Plus,
   Minus,
+  Package,
 } from "lucide-react";
 
 import { AdminShell, PageHeader } from "@/components/admin/AdminShell";
@@ -33,6 +34,14 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminSession } from "@/lib/admin/auth";
 import type { Jogo } from "@/lib/jogos";
+import { formatarReais } from "@/lib/formato";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   formatarDataHoraBR,
   rotuloFase,
@@ -42,7 +51,7 @@ import {
 } from "@/lib/admin/jogo-helpers";
 
 const COLUNAS =
-  "id,numero_jogo,fase,grupo,data_hora_inicio,time_a,codigo_a,time_b,codigo_b,estadio,cidade,pais_sede,status,placar_a,placar_b,palpites_encerrados,premio_descricao,premio_imagem_url,envolve_brasil";
+  "id,numero_jogo,fase,grupo,data_hora_inicio,time_a,codigo_a,time_b,codigo_b,estadio,cidade,pais_sede,status,placar_a,placar_b,palpites_encerrados,premio_descricao,premio_imagem_url,envolve_brasil,premio_produto_id,premio_quantidade";
 
 export const Route = createFileRoute("/admin/jogo/$id")({
   component: () => (
@@ -73,7 +82,7 @@ function DetalheJogoPage() {
         .eq("id", id)
         .single();
       if (error) throw error;
-      return data as Jogo;
+      return data as unknown as Jogo;
     },
     refetchInterval: 15_000,
   });
@@ -275,6 +284,8 @@ function DetalheJogoPage() {
 
         {mostrarGanhadores && <CardGanhadores jogo={jogo} />}
 
+        {(placarLancado || jaEncerrado) && <CardInvestimento jogoId={jogo.id} />}
+
         <ListaPalpitesAdmin jogoId={id} />
       </div>
     </>
@@ -301,18 +312,49 @@ function TimeBox({ nome, codigo }: { nome: string; codigo: string | null }) {
 function AcaoPremio({ jogo, onDone }: { jogo: Jogo; onDone: () => void }) {
   const [desc, setDesc] = useState(jogo.premio_descricao ?? "");
   const [imgUrl, setImgUrl] = useState(jogo.premio_imagem_url ?? "");
+  const [produtoId, setProdutoId] = useState<string>(
+    jogo.premio_produto_id ?? "",
+  );
+  const [qtd, setQtd] = useState<number>(jogo.premio_quantidade ?? 1);
   const [loading, setLoading] = useState(false);
+
+  const produtosQ = useQuery({
+    queryKey: ["admin", "produtos", "ativos"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("produtos")
+        .select("id,nome,custo_reais,ativo")
+        .eq("ativo", true)
+        .order("nome", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        id: string;
+        nome: string;
+        custo_reais: number | string;
+        ativo: boolean;
+      }>;
+    },
+  });
+
   const sujo =
     desc !== (jogo.premio_descricao ?? "") ||
-    imgUrl !== (jogo.premio_imagem_url ?? "");
+    imgUrl !== (jogo.premio_imagem_url ?? "") ||
+    (produtoId || null) !== (jogo.premio_produto_id ?? null) ||
+    qtd !== (jogo.premio_quantidade ?? 1);
 
   async function salvar() {
+    if (!Number.isInteger(qtd) || qtd < 1) {
+      toast.error("Quantidade deve ser um inteiro maior ou igual a 1.");
+      return;
+    }
     setLoading(true);
     const { error } = await supabase
       .from("jogos")
       .update({
         premio_descricao: desc.trim() || null,
         premio_imagem_url: imgUrl.trim() || null,
+        premio_produto_id: produtoId || null,
+        premio_quantidade: qtd,
       })
       .eq("id", jogo.id);
     setLoading(false);
@@ -328,6 +370,43 @@ function AcaoPremio({ jogo, onDone }: { jogo: Jogo; onDone: () => void }) {
     <section className="glass rounded-3xl p-5">
       <Cabecalho icon={<Gift className="size-5" />} titulo="Prêmio do jogo" passo={2} />
       <div className="space-y-3">
+        <div className="grid grid-cols-[1fr_120px] gap-3">
+          <div>
+            <Label className="text-cl-verde-escuro">Produto bonificável</Label>
+            <Select
+              value={produtoId || "__nenhum"}
+              onValueChange={(v) => setProdutoId(v === "__nenhum" ? "" : v)}
+            >
+              <SelectTrigger className="mt-1 bg-white">
+                <SelectValue placeholder="Selecionar produto" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__nenhum">— Nenhum —</SelectItem>
+                {(produtosQ.data ?? []).map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.nome} · {formatarReais(Number(p.custo_reais))}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="premio-qtd" className="text-cl-verde-escuro">
+              Qtd/comanda
+            </Label>
+            <Input
+              id="premio-qtd"
+              type="number"
+              min={1}
+              max={20}
+              value={qtd}
+              onChange={(e) =>
+                setQtd(Math.max(1, Math.min(20, Number(e.target.value) || 1)))
+              }
+              className="mt-1 bg-white tabular-nums text-center"
+            />
+          </div>
+        </div>
         <div>
           <Label htmlFor="premio-desc" className="text-cl-verde-escuro">
             Descrição
@@ -978,4 +1057,67 @@ function traduzirErro(msg: string, fallback: string) {
   if (m.includes("permission") || m.includes("rls")) return "Sem permissão.";
   if (m.includes("network") || m.includes("fetch")) return "Sem conexão agora.";
   return fallback;
+}
+
+/* ===== INVESTIMENTO ===== */
+type InvestimentoRow = {
+  comandas_ganhadoras: number | null;
+  itens: number | null;
+  investimento: number | string | null;
+};
+
+function CardInvestimento({ jogoId }: { jogoId: string }) {
+  const q = useQuery({
+    queryKey: ["admin", "investimento", jogoId],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("fn_investimento_jogo", {
+        p_jogo_id: jogoId,
+      });
+      if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      return (row ?? null) as InvestimentoRow | null;
+    },
+  });
+
+  return (
+    <section className="glass rounded-3xl p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <Package className="size-5 text-cl-verde-escuro" />
+        <h2 className="font-display text-cl-verde-escuro text-lg">
+          Investimento do jogo
+        </h2>
+      </div>
+      {q.isLoading ? (
+        <div className="py-4 text-center text-cl-cinza-texto">
+          <Loader2 className="size-5 mx-auto animate-spin" />
+        </div>
+      ) : q.isError || !q.data ? (
+        <p className="text-sm text-cl-cinza-texto">
+          Investimento indisponível no momento.
+        </p>
+      ) : (
+        <div className="grid grid-cols-3 gap-2">
+          <BoxNum label="Comandas" valor={String(q.data.comandas_ganhadoras ?? 0)} />
+          <BoxNum label="Itens" valor={String(q.data.itens ?? 0)} />
+          <BoxNum
+            label="Investido"
+            valor={formatarReais(Number(q.data.investimento ?? 0))}
+          />
+        </div>
+      )}
+    </section>
+  );
+}
+
+function BoxNum({ label, valor }: { label: string; valor: string }) {
+  return (
+    <div className="rounded-xl bg-white/70 border border-cl-verde/15 px-2 py-3 text-center">
+      <p className="text-[10px] uppercase tracking-wider text-cl-cinza-texto">
+        {label}
+      </p>
+      <p className="font-display text-cl-verde-escuro text-xl tabular-nums leading-none mt-1">
+        {valor}
+      </p>
+    </div>
+  );
 }

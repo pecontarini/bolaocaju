@@ -29,6 +29,8 @@ export type Jogo = {
   premio_descricao: string | null;
   premio_imagem_url: string | null;
   envolve_brasil: boolean | null;
+  premio_produto_id?: string | null;
+  premio_quantidade?: number | null;
 };
 
 export const formatarDataJogo = (iso: string) =>
