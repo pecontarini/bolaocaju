@@ -1,8 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { Button } from "@/components/ui/button";
 import { type Jogo } from "@/lib/jogos";
 import { Bandeira } from "./Bandeira";
-import { MapPin } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 function horaBR(iso: string) {
   return new Date(iso).toLocaleTimeString("pt-BR", {
@@ -12,84 +11,104 @@ function horaBR(iso: string) {
   });
 }
 
+function diaBR(iso: string) {
+  return new Date(iso)
+    .toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "short",
+      timeZone: "America/Sao_Paulo",
+    })
+    .replace(".", "");
+}
+
 export function CardJogoAberto({ jogo }: { jogo: Jogo }) {
-  const aoVivo =
-    jogo.placar_a !== null && jogo.placar_b !== null;
+  const aoVivo = jogo.placar_a !== null && jogo.placar_b !== null;
+  const envolveBrasil = jogo.codigo_a === "BRA" || jogo.codigo_b === "BRA";
+
   return (
-    <article className="glass card-press rounded-2xl overflow-hidden">
-      <div className="px-4 pt-3 pb-1.5 flex items-center justify-between">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-cl-cinza-texto tabular">
-          {horaBR(jogo.data_hora_inicio)}
-        </span>
-        <span
-          className={`inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider rounded-full px-2 py-0.5 font-semibold ${
-            aoVivo
-              ? "bg-cl-laranja/20 text-cl-laranja"
-              : "bg-cl-verde-claro text-cl-verde-escuro"
-          }`}
-        >
-          <span className="pulse-dot" aria-hidden />
-          {aoVivo ? "Ao vivo" : "Aberto"}
-        </span>
-      </div>
-      <div className="px-4 pt-1 pb-3 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-        <TimeMini nome={jogo.time_a} codigo={jogo.codigo_a} alinhar="end" />
-        {aoVivo ? (
-          <span className="font-display text-cl-verde-escuro text-2xl leading-none tabular-nums px-2 py-1 rounded-lg bg-cl-verde-claro">
-            {jogo.placar_a}
-            <span className="text-cl-cinza-texto mx-1">×</span>
-            {jogo.placar_b}
+    <Link
+      to="/palpitar/$jogoId"
+      params={{ jogoId: jogo.id }}
+      className="block card-press"
+    >
+      <article
+        className={`glass rounded-[10px] overflow-hidden grid grid-cols-[56px_1fr_auto] items-stretch ${
+          envolveBrasil ? "ring-1 ring-cl-laranja/60" : ""
+        }`}
+      >
+        {/* Coluna 1: hora/data */}
+        <div className="flex flex-col items-center justify-center border-r border-border/60 py-2.5 px-1 text-cl-cinza-texto">
+          <span className="text-[10px] uppercase tracking-wider">
+            {diaBR(jogo.data_hora_inicio)}
           </span>
-        ) : (
-          <span className="font-display text-cl-cinza-texto text-2xl leading-none">×</span>
-        )}
-        <TimeMini nome={jogo.time_b} codigo={jogo.codigo_b} alinhar="start" />
-      </div>
-      {(jogo.estadio || jogo.cidade) && (
-        <div className="px-4 pb-3 flex items-center justify-center gap-1 text-[11px] text-cl-cinza-texto">
-          <MapPin className="size-3" />
-          <span className="truncate">
-            {[jogo.estadio, jogo.cidade].filter(Boolean).join(" · ")}
+          <span className="text-[15px] font-semibold num text-cl-verde-escuro mt-0.5">
+            {horaBR(jogo.data_hora_inicio)}
           </span>
         </div>
-      )}
-      <div className="px-4 pb-4">
-        <Button
-          asChild
-          className="w-full h-12 bg-cl-verde hover:bg-cl-verde-escuro text-white rounded-xl font-semibold text-base shadow-[0_8px_22px_-12px_rgba(28,59,22,0.55)]"
-        >
-          <Link to="/palpitar/$jogoId" params={{ jogoId: jogo.id }}>
-            Palpitar
-          </Link>
-        </Button>
-      </div>
-    </article>
+
+        {/* Coluna 2: times empilhados */}
+        <div className="py-2 px-3 flex flex-col gap-1.5 min-w-0">
+          <LinhaTime
+            nome={jogo.time_a}
+            codigo={jogo.codigo_a}
+            placar={aoVivo ? jogo.placar_a : null}
+            destaque={jogo.codigo_a === "BRA"}
+          />
+          <LinhaTime
+            nome={jogo.time_b}
+            codigo={jogo.codigo_b}
+            placar={aoVivo ? jogo.placar_b : null}
+            destaque={jogo.codigo_b === "BRA"}
+          />
+        </div>
+
+        {/* Coluna 3: status + seta */}
+        <div className="flex flex-col items-end justify-center gap-1 pr-3 pl-1 py-2">
+          {aoVivo ? (
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-cl-laranja">
+              <span className="pulse-dot" aria-hidden />
+              Ao vivo
+            </span>
+          ) : (
+            <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wider text-cl-verde">
+              Aberto
+            </span>
+          )}
+          <ChevronRight className="size-4 text-cl-cinza-texto" />
+        </div>
+      </article>
+    </Link>
   );
 }
 
-function TimeMini({
+function LinhaTime({
   nome,
   codigo,
-  alinhar,
+  placar,
+  destaque,
 }: {
   nome: string;
   codigo: string | null;
-  alinhar: "start" | "end";
+  placar: number | null;
+  destaque?: boolean;
 }) {
   return (
-    <div
-      className={`flex items-center gap-2.5 min-w-0 ${alinhar === "end" ? "justify-end" : "justify-start"}`}
-    >
-      {alinhar === "start" && <Bandeira codigo={codigo} tamanho={36} />}
-      <div className={`min-w-0 ${alinhar === "end" ? "text-right" : "text-left"}`}>
-        <p className="font-display text-cl-verde-escuro text-lg leading-none truncate">
-          {codigo ?? nome.slice(0, 3).toUpperCase()}
-        </p>
-        <p className="text-[10px] text-cl-cinza-texto truncate mt-1 uppercase tracking-wide">
-          {nome}
-        </p>
-      </div>
-      {alinhar === "end" && <Bandeira codigo={codigo} tamanho={36} />}
+    <div className="flex items-center gap-2 min-w-0">
+      <Bandeira codigo={codigo} tamanho={18} />
+      <span
+        className={`text-[14px] truncate flex-1 ${
+          destaque
+            ? "font-semibold text-cl-verde-escuro"
+            : "font-medium text-cl-verde-escuro"
+        }`}
+      >
+        {nome}
+      </span>
+      {placar !== null && (
+        <span className="text-[15px] font-semibold num text-cl-verde-escuro tabular-nums">
+          {placar}
+        </span>
+      )}
     </div>
   );
 }
