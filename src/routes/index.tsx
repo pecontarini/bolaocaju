@@ -539,9 +539,16 @@ function PartidasPorGrupo({ jogos }: { jogos: Jogo[] }) {
   const grupos = useMemo(() => {
     const m = new Map<string, Jogo[]>();
     for (const j of jogos) {
-      const g = j.grupo ?? "—";
-      if (!m.has(g)) m.set(g, []);
-      m.get(g)!.push(j);
+      if (j.fase !== "fase_grupos" || !j.grupo) continue;
+      if (!m.has(j.grupo)) m.set(j.grupo, []);
+      m.get(j.grupo)!.push(j);
+    }
+    for (const lista of m.values()) {
+      lista.sort(
+        (a, b) =>
+          new Date(a.data_hora_inicio).getTime() -
+          new Date(b.data_hora_inicio).getTime(),
+      );
     }
     return Array.from(m.entries()).sort(([a], [b]) => a.localeCompare(b));
   }, [jogos]);
@@ -568,9 +575,17 @@ function PartidasPorRodada({ jogos }: { jogos: Jogo[] }) {
   const rodadas = useMemo(() => {
     const m = new Map<string, Jogo[]>();
     for (const j of jogos) {
-      const k = j.rodada != null ? String(j.rodada) : "—";
+      if (j.fase !== "fase_grupos" || j.rodada == null) continue;
+      const k = String(j.rodada);
       if (!m.has(k)) m.set(k, []);
       m.get(k)!.push(j);
+    }
+    for (const lista of m.values()) {
+      lista.sort(
+        (a, b) =>
+          new Date(a.data_hora_inicio).getTime() -
+          new Date(b.data_hora_inicio).getTime(),
+      );
     }
     return Array.from(m.entries()).sort(([a], [b]) => a.localeCompare(b));
   }, [jogos]);
@@ -580,7 +595,7 @@ function PartidasPorRodada({ jogos }: { jogos: Jogo[] }) {
       {rodadas.map(([r, lista]) => (
         <div key={r}>
           <p className="text-[11px] font-semibold uppercase tracking-wider text-cl-verde-escuro mb-2">
-            {r === "—" ? "Sem rodada" : `Rodada ${r}`}
+            Rodada {r}
           </p>
           <div className="space-y-1.5">
             {lista.map((j) => (
