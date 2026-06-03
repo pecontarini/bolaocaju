@@ -77,7 +77,7 @@ function HomeCliente() {
       <h1 className="sr-only">Bolão Caju Limão</h1>
 
       {/* Bloco 1: carrossel de grupos */}
-      <section className="mb-2">
+      <section className="mb-4">
         <HeaderClassificacao titulo="Grupos" />
         <CarrosselGrupos
           grupos={grupos.data ?? []}
@@ -86,11 +86,9 @@ function HomeCliente() {
         />
       </section>
 
-      <FaixaAzulejos className="my-6 opacity-90" />
-
       {/* Bloco 2: jogos em ordem cronológica */}
-      <section>
-        <SectionTitle>Jogos</SectionTitle>
+      <section className="mt-6">
+        <HeaderClassificacao titulo="Jogos" />
         {jogos.isLoading ? (
           <SkeletonList />
         ) : (
@@ -214,11 +212,8 @@ function CarrosselGrupos({
                 onClick={() => irPara(g)}
                 aria-label={`Grupo ${g}`}
                 aria-pressed={isAtivo}
-                className={`h-8 min-w-8 px-2.5 rounded-full font-display text-sm tracking-wider border transition-colors ${
-                  isAtivo
-                    ? "bg-cl-verde-escuro text-white border-cl-verde-escuro shadow-[0_4px_14px_-8px_rgba(28,59,22,0.7)]"
-                    : "bg-white text-cl-verde-escuro border-border"
-                }`}
+                data-active={isAtivo}
+                className="chip min-w-9 font-semibold"
               >
                 {g}
               </button>
@@ -300,21 +295,21 @@ function ListaJogosCronologica({ jogos }: { jogos: Jogo[] }) {
         const ehHoje = k === hojeKey;
         return (
           <div key={k}>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-2 mt-1">
               <p
-                className={`font-display text-sm uppercase tracking-wider ${
+                className={`text-[11px] font-semibold uppercase tracking-wider ${
                   ehHoje ? "text-cl-laranja" : "text-cl-verde-escuro"
                 }`}
               >
                 {rotuloDia(lista[0].data_hora_inicio, hojeKey)}
               </p>
               {ehHoje && (
-                <span className="text-[10px] font-semibold uppercase tracking-wider bg-cl-laranja text-white rounded-full px-2 py-0.5">
+                <span className="text-[9px] font-semibold uppercase tracking-wider bg-cl-laranja text-white rounded-full px-2 py-0.5">
                   agora
                 </span>
               )}
             </div>
-            <div className="space-y-3">
+            <div className="space-y-1.5">
               {lista.map((j) => (
                 <CardJogoAberto key={j.id} jogo={j} />
               ))}
@@ -347,10 +342,10 @@ function ListaJogosCronologica({ jogos }: { jogos: Jogo[] }) {
                 .reverse()
                 .map(([k, lista]) => (
                   <div key={k}>
-                    <p className="font-display text-sm uppercase tracking-wider text-cl-cinza-texto mb-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-cl-cinza-texto mb-2">
                       {rotuloDia(lista[0].data_hora_inicio, hojeKey)}
                     </p>
-                    <div className="space-y-3">
+                    <div className="space-y-1.5">
                       {lista.map((j) => (
                         <CardJogoAberto key={j.id} jogo={j} />
                       ))}
