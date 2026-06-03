@@ -208,9 +208,7 @@ export function PageHeader({
   return (
     <div className="flex items-start justify-between gap-3 mb-5 flex-wrap">
       <div className="min-w-0">
-        <h1 className="font-display text-cl-verde-escuro text-2xl sm:text-3xl leading-tight">
-          {titulo}
-        </h1>
+        <h1 className="tela-titulo">{titulo}</h1>
         {subtitulo && (
           <p className="text-[13px] sm:text-sm text-cl-cinza-texto mt-1">
             {subtitulo}
