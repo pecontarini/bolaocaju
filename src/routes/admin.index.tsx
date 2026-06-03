@@ -1,18 +1,13 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Trophy, Users } from "lucide-react";
+import { Trophy, Users } from "lucide-react";
 
 import { AdminShell, PageHeader } from "@/components/admin/AdminShell";
-import { Bandeira } from "@/components/jogos/Bandeira";
-import { Button } from "@/components/ui/button";
+import { CardJogoAdmin } from "@/components/admin/CardJogoAdmin";
 import { supabase } from "@/integrations/supabase/client";
 import type { Jogo } from "@/lib/jogos";
-import {
-  inicioFimDeHojeBrasilia,
-  statusBadgeClass,
-  STATUS_LABEL,
-} from "@/lib/admin/jogo-helpers";
+import { inicioFimDeHojeBrasilia } from "@/lib/admin/jogo-helpers";
 
 export const Route = createFileRoute("/admin/")({
   component: () => (
@@ -190,19 +185,17 @@ function ListaJogosAdmin({
   mostrarPalpites: boolean;
 }) {
   return (
-    <ul className="glass-data rounded-2xl divide-y divide-cl-verde/10 overflow-hidden">
+    <ul className="space-y-2.5">
       {jogos.map((j) => (
-        <LinhaJogoAdmin
-          key={j.id}
-          jogo={j}
-          mostrarPalpites={mostrarPalpites}
-        />
+        <li key={j.id}>
+          <ItemJogoAdmin jogo={j} mostrarPalpites={mostrarPalpites} />
+        </li>
       ))}
     </ul>
   );
 }
 
-function LinhaJogoAdmin({
+function ItemJogoAdmin({
   jogo,
   mostrarPalpites,
 }: {
@@ -242,46 +235,10 @@ function LinhaJogoAdmin({
   }, [jogo.id, mostrarPalpites]);
 
   return (
-    <li className="px-4 py-3 flex items-center gap-3">
-      <div className="text-xs text-cl-cinza-texto w-14 shrink-0 tabular-nums">
-        {new Date(jogo.data_hora_inicio).toLocaleTimeString("pt-BR", {
-          hour: "2-digit",
-          minute: "2-digit",
-          timeZone: "America/Sao_Paulo",
-        })}
-      </div>
-      <div className="flex-1 min-w-0 flex items-center gap-2">
-        <Bandeira codigo={jogo.codigo_a} tamanho={18} />
-        <span className="text-sm text-cl-verde-escuro truncate">
-          {jogo.codigo_a ?? jogo.time_a}
-        </span>
-        <span className="text-cl-cinza-texto text-xs">x</span>
-        <span className="text-sm text-cl-verde-escuro truncate">
-          {jogo.codigo_b ?? jogo.time_b}
-        </span>
-        <Bandeira codigo={jogo.codigo_b} tamanho={18} />
-      </div>
-      {mostrarPalpites ? (
-        <span className="text-[11px] font-display text-cl-verde-escuro tabular-nums rounded-full bg-cl-laranja/30 px-2 py-0.5">
-          {count ?? "—"} palpites
-        </span>
-      ) : (
-        <span
-          className={`text-[10px] uppercase tracking-wider rounded-full px-2 py-0.5 ${statusBadgeClass(jogo.status)}`}
-        >
-          {STATUS_LABEL[jogo.status]}
-        </span>
-      )}
-      <Button
-        asChild
-        size="sm"
-        variant="ghost"
-        className="text-cl-verde-escuro"
-      >
-        <Link to="/admin/jogo/$id" params={{ id: jogo.id }}>
-          <ArrowRight className="size-4" />
-        </Link>
-      </Button>
-    </li>
+    <CardJogoAdmin
+      jogo={jogo}
+      mostrarPalpites={mostrarPalpites}
+      palpites={count}
+    />
   );
 }
