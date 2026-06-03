@@ -20,12 +20,12 @@ export function HeaderCliente() {
   const [open, setOpen] = useState(false);
   return (
     <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-border">
-      <div className="mx-auto max-w-[480px] flex items-center justify-between px-4 h-14">
+      <div className="mx-auto max-w-[480px] flex items-center justify-between px-4 h-13" style={{ height: 52 }}>
         <Link to="/" className="flex items-center gap-2">
           <img
             src="/assets/01-logo-horizontal-verde.png"
             alt="Caju Limão"
-            className="h-10 w-auto"
+            className="h-9 w-auto"
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).style.display = "none";
             }}

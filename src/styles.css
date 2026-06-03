@@ -124,22 +124,27 @@
     color: var(--color-foreground);
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv11", "ss01";
   }
 
   h1, h2, h3, .font-display {
     font-family: var(--font-display);
     letter-spacing: -0.01em;
   }
+
+  table {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
 }
 
 @layer utilities {
   .glass {
-    background-color: color-mix(in oklab, white 78%, transparent);
-    backdrop-filter: blur(14px) saturate(140%);
-    border: 1px solid color-mix(in oklab, white 60%, transparent);
+    background-color: #fff;
+    border: 1px solid color-mix(in oklab, var(--cl-verde-escuro) 8%, transparent);
     box-shadow:
-      0 1px 0 0 color-mix(in oklab, white 70%, transparent) inset,
-      0 12px 30px -18px color-mix(in oklab, var(--cl-verde-escuro) 40%, transparent);
+      0 1px 2px color-mix(in oklab, var(--cl-verde-escuro) 6%, transparent),
+      0 1px 0 color-mix(in oklab, var(--cl-verde-escuro) 4%, transparent);
   }
   .glass-dark {
     background-color: color-mix(in oklab, var(--cl-verde-escuro) 80%, transparent);
@@ -149,6 +154,54 @@
   }
   .tabular {
     font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+    letter-spacing: 0;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 9999px;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1;
+    border: 1px solid color-mix(in oklab, var(--cl-verde-escuro) 14%, transparent);
+    background: #fff;
+    color: var(--cl-verde-escuro);
+    transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .chip[data-active="true"] {
+    background: var(--cl-verde);
+    color: #fff;
+    border-color: var(--cl-verde);
+    box-shadow: 0 4px 12px -8px color-mix(in oklab, var(--cl-verde) 70%, transparent);
+  }
+  .tab-underline {
+    position: relative;
+    padding: 10px 14px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: color-mix(in oklab, var(--cl-cinza-texto) 80%, transparent);
+    transition: color .15s ease;
+  }
+  .tab-underline[data-active="true"] {
+    color: var(--cl-verde-escuro);
+  }
+  .tab-underline[data-active="true"]::after {
+    content: "";
+    position: absolute;
+    left: 12px; right: 12px; bottom: 0;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--cl-verde);
   }
   .safe-bottom {
     padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
@@ -164,8 +217,10 @@
     border-radius: 0.85rem;
     background: var(--cl-verde-escuro);
     color: #fff;
-    font-family: var(--font-display);
+    font-family: var(--font-body);
+    font-weight: 600;
     font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
     line-height: 1;
     box-shadow: 0 6px 18px -10px color-mix(in oklab, var(--cl-verde-escuro) 80%, transparent);
   }
