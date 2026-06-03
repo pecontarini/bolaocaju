@@ -82,7 +82,7 @@ function DetalheJogoPage() {
         .eq("id", id)
         .single();
       if (error) throw error;
-      return data as Jogo;
+      return data as unknown as Jogo;
     },
     refetchInterval: 15_000,
   });
