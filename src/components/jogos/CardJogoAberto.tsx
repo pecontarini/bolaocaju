@@ -32,8 +32,12 @@ export function CardJogoAberto({ jogo }: { jogo: Jogo }) {
       className="block card-press"
     >
       <article
-        className={`glass rounded-[10px] overflow-hidden grid grid-cols-[56px_1fr_auto] items-stretch ${
-          envolveBrasil ? "ring-1 ring-cl-laranja/60" : ""
+        className={`glass rounded-3xl overflow-hidden grid grid-cols-[56px_1fr_auto] items-stretch transition-shadow hover:shadow-[0_8px_28px_rgba(28,59,22,0.10)] ${
+          aoVivo
+            ? "ring-1 ring-cl-laranja/40"
+            : envolveBrasil
+              ? "ring-1 ring-cl-laranja/30"
+              : ""
         }`}
       >
         {/* Coluna 1: hora/data */}

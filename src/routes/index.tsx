@@ -9,7 +9,7 @@ import {
   type LinhaClassificacao,
 } from "@/components/jogos/TabelaClassificacao";
 import type { Jogo } from "@/lib/jogos";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useJogosRealtime } from "@/hooks/useJogosRealtime";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -109,10 +109,7 @@ function CarrosselGrupos({
   classificacao: LinhaClassificacao[];
   carregando: boolean;
 }) {
-  const swiperRef = useRef<HTMLDivElement | null>(null);
-  const slideRefs = useRef<Map<string, HTMLElement | null>>(new Map());
   const [ativo, setAtivo] = useState<string | null>(null);
-  const scrollProgrammatic = useRef(false);
 
   const classPorGrupo = useMemo(() => {
     const m = new Map<string, LinhaClassificacao[]>();
@@ -127,47 +124,15 @@ function CarrosselGrupos({
     if (!ativo && grupos.length) setAtivo(grupos[0]);
   }, [grupos, ativo]);
 
-  function irPara(g: string) {
-    setAtivo(g);
-    const el = slideRefs.current.get(g);
-    if (el && swiperRef.current) {
-      scrollProgrammatic.current = true;
-      swiperRef.current.scrollTo({ left: el.offsetLeft, behavior: "smooth" });
-      window.setTimeout(() => {
-        scrollProgrammatic.current = false;
-      }, 600);
-    }
-  }
-
-  useEffect(() => {
-    const root = swiperRef.current;
-    if (!root || !grupos.length) return;
-    const obs = new IntersectionObserver(
-      (entries) => {
-        if (scrollProgrammatic.current) return;
-        const visivel = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (visivel) {
-          const g = (visivel.target as HTMLElement).dataset.grupo;
-          if (g && g !== ativo) setAtivo(g);
-        }
-      },
-      { root, threshold: [0.55, 0.75] },
-    );
-    slideRefs.current.forEach((el) => el && obs.observe(el));
-    return () => obs.disconnect();
-  }, [grupos, ativo]);
-
   if (carregando) {
     return (
-      <div className="rounded-2xl border border-border bg-white p-4 animate-pulse h-72" />
+      <div className="rounded-3xl bg-white/40 border border-white/60 p-4 animate-pulse h-72" />
     );
   }
 
   if (!grupos.length) {
     return (
-      <div className="rounded-2xl border-2 border-dashed border-cl-verde/40 p-6 text-center">
+      <div className="rounded-3xl border-2 border-dashed border-cl-verde/40 p-6 text-center">
         <p className="text-sm text-cl-cinza-texto">
           Nenhum grupo cadastrado ainda.
         </p>
@@ -175,50 +140,47 @@ function CarrosselGrupos({
     );
   }
 
+  const grupoAtivo = ativo ?? grupos[0];
+
   return (
     <div>
+      {/* Seletor de grupos: pílulas modernas (sem swipe) */}
       <div
-        ref={swiperRef}
-        className="-mx-4 flex overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth touch-pan-x"
+        className="-mx-4 px-4 mb-4 overflow-x-auto no-scrollbar"
         style={{ scrollbarWidth: "none" }}
       >
-        {grupos.map((g) => (
-          <section
-            key={g}
-            data-grupo={g}
-            ref={(el) => {
-              slideRefs.current.set(g, el);
-            }}
-            className="snap-center shrink-0 w-full px-4"
-          >
-            <TabelaClassificacao
-              grupo={g}
-              linhas={classPorGrupo.get(g) ?? []}
-            />
-          </section>
-        ))}
-      </div>
-
-      {/* Indicadores (chips A-L) */}
-      <div className="-mx-4 px-4 mt-3 overflow-x-auto no-scrollbar">
-        <div className="flex gap-1.5 w-max pr-4 justify-center mx-auto">
+        <div role="tablist" aria-label="Grupos" className="flex gap-2 w-max pb-1">
           {grupos.map((g) => {
-            const isAtivo = g === ativo;
+            const isAtivo = g === grupoAtivo;
             return (
               <button
                 key={g}
                 type="button"
-                onClick={() => irPara(g)}
-                aria-label={`Grupo ${g}`}
-                aria-pressed={isAtivo}
-                data-active={isAtivo}
-                className="chip min-w-9 font-semibold"
+                role="tab"
+                aria-selected={isAtivo}
+                onClick={() => setAtivo(g)}
+                className={
+                  isAtivo
+                    ? "px-4 py-2 rounded-full bg-cl-verde text-white text-sm font-semibold shadow-sm whitespace-nowrap transition-colors"
+                    : "px-4 py-2 rounded-full bg-white/60 text-cl-verde text-sm font-semibold border border-cl-verde/15 whitespace-nowrap hover:bg-white/80 transition-colors"
+                }
               >
-                {g}
+                Grupo {g}
               </button>
             );
           })}
         </div>
+      </div>
+
+      {/* Tabela do grupo ativo (com fade-in suave ao trocar) */}
+      <div
+        key={grupoAtivo}
+        className="animate-in fade-in-0 slide-in-from-bottom-1 duration-200"
+      >
+        <TabelaClassificacao
+          grupo={grupoAtivo}
+          linhas={classPorGrupo.get(grupoAtivo) ?? []}
+        />
       </div>
     </div>
   );
