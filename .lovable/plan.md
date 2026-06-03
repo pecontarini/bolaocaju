@@ -1,99 +1,67 @@
-# Revisão mobile do Bolão Caju Limão
 
-Refino sutil, mobile-first, sem alterar marca, paleta, fontes (Playfair + Inter), banco, RPCs ou regras de negócio. Foco principal: como placares e confrontos são exibidos.
+# Modernização visual global — Caju x Sofascore
 
-## Princípios visuais
+Objetivo: deixar o app mais denso, limpo e moderno (cara de app esportivo), **mantendo** a paleta Caju, os selos, o logo e o Playfair como assinatura de marca. Mudança aplicada como design system (tokens + componentes base), não tela a tela.
 
-- **Hierarquia do confronto**: bandeira maior + sigla (3 letras) como elemento dominante, nome do país secundário em caixa baixa. Placar tabular com `font-variant-numeric: tabular-nums` em peso display, sempre alinhado por baseline.
-- **Espaçamento**: 16px (px-4) padrão, 12px entre cards, gutters seguros para iPhone SE (375px) sem cortes. `min-w-0` + `truncate` em todos os blocos de nome.
-- **Safe areas**: aplicar `env(safe-area-inset-bottom)` em CTAs sticky e no padding do `<main>` para iOS.
-- **Toque**: alvos mínimos 44×44px (botões +/- do palpite, ícones do header, linhas clicáveis em listas).
-- **Glass**: manter o utilitário `.glass` já corrigido (sem `-webkit-backdrop-filter` manual). Sombra mais suave nos cards do cliente para dar leveza.
-- **Microanimações sutis**: `transition-transform active:scale-[0.98]` nos cards/CTAs, fade-in dos cards de jogo, pulse leve no badge "Aberto".
+## 1. Tokens (src/styles.css)
 
-## Cliente
+- **Tipografia**
+  - `--font-body: "Inter", system-ui, sans-serif` — usado por padrão em `html, body`, tabelas, dados, números, botões, navegação, labels, horários, nomes de time.
+  - `--font-display: "Playfair Display", Georgia, serif` — usado **apenas** via classe `.font-display` em títulos de seção, nome do app, nome de tela e palavras-chave de marca ("Classificação", "Grupos", "Jogo de hoje", "Sobre a Copa", "Bolão Caju Limão").
+  - Remover Playfair de placares grandes, números de tabela e nomes de time (hoje aparece em `CardJogoAberto`, `TabelaClassificacao`, `placar-chip`, etc.).
+- **Numéricos**: nova utility `.num` que aplica `font-variant-numeric: tabular-nums` + `font-feature-settings: "tnum"`. Aplicada em toda célula numérica, placar, horário e contagem.
+- **Cores** (mantém o que existe — só consolida o uso):
+  - Primária `#2F591A` (cl-verde), forte `#1C3B16` (cl-verde-escuro), laranja `#F6B26B` (cl-laranja), fundo `#F5F2EA` (cl-cinza-bg), texto secundário `#5F5E5A` (cl-cinza-texto), branco.
+- **Raios & sombras**: padronizar em `--radius: 0.625rem` (10px, mais Sofascore); sombras suaves discretas (`--shadow-card: 0 1px 2px rgba(28,59,22,.06), 0 1px 0 rgba(28,59,22,.04)`).
+- **Densidade**:
+  - `--row-h: 40px` (linha de tabela)
+  - `--header-table-h: 28px`
+  - Zebra `--zebra: #F5F2EA` (muito leve)
+  - Divisor `--divider: color-mix(in oklab, #1C3B16 8%, transparent)`
+- **Textura geométrica**: aplicada **apenas** em hero/visão geral (`/sobre-copa` hero, banner home) com opacidade 6–8%. Remover do `LayoutCliente` (hoje é fundo global).
 
-### 1. Card de jogo aberto (`CardJogoAberto`)
-Hoje: linha única apertada com `time_a × time_b`, bandeiras 22px, sigla pequena.
-Novo layout mobile-first:
-- Cabeçalho: hora à esquerda, badge "Aberto" (verde-claro com bolinha pulsante) à direita, fase/grupo discreto.
-- Confronto centrado em 3 colunas: bandeira 40×30 com sombra, sigla 18px (display, peso 700), nome 11px truncado, ambos lados simétricos.
-- Separador "×" em display 24px com cor cinza-texto.
-- Linha de meta abaixo do confronto: estádio · cidade (texto 11px, ícone MapPin opcional) — só se couber.
-- CTA "Palpitar" full-width, 48px, sombra verde discreta.
+## 2. Componentes base padronizados
 
-### 2. Lista de resultados (`ListaResultados`)
-- Migrar de `<ul>` denso para cards de vidro empilhados com 56–64px de altura.
-- Layout: data curta à esquerda (col fixa), confronto centro com siglas + bandeiras, placar à direita em chip arredondado verde-escuro destacando o resultado (`23  ×  10` com nums tabulares).
-- Indicar vencedor com sigla em negrito; empate sem destaque.
+Centralizar em `src/components/site/` (ou `ui-caju/`) para reuso:
 
-### 3. Tela de palpite (`palpitar.$jogoId`)
-- Reduzir o selo laranja de 80px para 56px no mobile e mover a saudação acima dele em coluna única para evitar quebra estranha quando o nome é longo.
-- "É a hora!" passa a viver dentro do card de placar como subtítulo, liberando vertical no topo.
-- Bloco placar: aumentar bandeira para 48px, sigla 20px; ticker (display do número) cresce para 64×64; botões +/- mantêm 40px mas ganham `min-h-11 min-w-11` com hit-area transparente.
-- Estado vazio/erro de geo: ícone maior, texto mais arejado.
-- CTA sticky com `pb-[env(safe-area-inset-bottom)]` e gradient blur por baixo para não cobrir o input.
+1. **HeaderCliente** (existe) — sem mudança estrutural; só ajusta tipografia (logo + nome em Playfair, restante em Inter) e altura 52px.
+2. **Tabs** (`TabsCaju`) — abas com indicador por **sublinhado verde** (`#2F591A`, 2px), label em Inter 13px maiúsculo medium, ativo em verde-escuro.
+3. **Chip de filtro** (`ChipFiltro`) — pill arredondado, ativo preenchido verde com texto branco, inativo branco com borda fina e texto verde-escuro. Altura 32px.
+4. **Badge de status** (`BadgeStatus`) — variantes `aberto` (verde-claro/verde-escuro), `aoVivo` (laranja com pulse), `encerrado` (cinza), `brasil` (laranja). 10px maiúsculo, tracking wide.
+5. **CardJogo** (refaz `CardJogoAberto`) — layout enxuto em 3 colunas: 
+   ```
+   [hora/data | times empilhados (bandeira + nome) | placar/status/ação]
+   ```
+   Padding 12px, dois times em linhas separadas (Sofascore-style), número de placar em Inter tabular, bandeira 20px, sem o "×" gigante. Botão "Palpitar" vira link/seta pequena à direita em vez de botão full-width — pra densidade.
+6. **TabelaClassificacao** (refaz visual) — linhas 40px, header `#1C3B16` em maiúsculo 11px, células em Inter 13px tabular, zebra suave, **sem** Playfair no header do grupo (vira label Inter), divisores finos, faixa de classificação como borda lateral verde de 2px.
+7. **SectionTitle** — selo 08-selo-circular-verde.png (h-5) + título em Playfair 18px + opcional sublinhado verde de 24px. Reutilizado em todas as seções.
+8. **Botões** — `Button` primary continua verde, mas com altura 44px (toque) e raio 10px. Secundário branco com borda cl-verde.
 
-### 4. Confirmação (`/confirmacao`)
-- Card do palpite ganha placar em "chip" gigante centralizado, igual ao da apuração, reforçando memorabilidade.
-- Comanda em pill destacada acima dos botões.
+## 3. Aplicação global
 
-### 5. Home (`/`)
-- Banner Copa: padding reduzido no mobile (`p-5`), `text-4xl` no número de dias, próximo jogo com bandeiras 28px e nome truncado correto.
-- Saudação "Boa, fera!" + subtítulo virando um único bloco glass curto.
-- SectionTitle ganha tamanho consistente (16px) e cor.
-- `SemJogoAberto`: card glass com selo, mais ar.
+- `src/styles.css`: ajustar tokens, adicionar `.num`, `.tabs-underline`, `.chip`, `.row-table`, atualizar `.glass` (mais sutil — quase plano, só leve translucidez no header).
+- `src/components/site/LayoutCliente.tsx`: remover textura geométrica de fundo (mantém só `bg-cl-cinza-bg`); textura passa para `Hero` em `/sobre-copa` e banner da home.
+- `src/components/site/HeaderCliente.tsx`: ajustar altura/tipografia.
+- `src/components/jogos/CardJogoAberto.tsx`: reescrever layout denso.
+- `src/components/jogos/TabelaClassificacao.tsx`: header e células em Inter tabular, densidade nova.
+- `src/routes/index.tsx`: aplicar `TabsCaju`/`ChipFiltro` no seletor de grupos; `SectionTitle` nas seções "Grupos" e "Jogos".
+- `src/routes/palpitar.$jogoId.tsx`: cabeçalho do jogo usa novo layout denso (bandeiras + nomes em Inter, números em Inter tabular grandes). Botões padronizados.
+- `/sobre-copa`, `/meus-palpites`: herdam automaticamente os novos tokens + `SectionTitle`.
 
-### 6. Header cliente (`HeaderCliente`)
-- Altura compacta (56px), logo 40px, sheet com itens 44px de altura, footer com versão/Boteco discreto.
+## 4. Acessibilidade e marca
 
-## Admin
+- Texto mínimo 14px no corpo; números/labels secundários 12–13px.
+- Contraste AA verificado (verde-escuro sobre branco, branco sobre verde-escuro, cinza-texto sobre branco).
+- Header sempre com logo horizontal Caju; selo circular em todo título de seção; Playfair como assinatura.
 
-### 7. Topbar mobile (`AdminShell`)
-- Mostrar o título da página atual ao lado do logo (compacto) para orientação. Reduzir padding para liberar área útil.
-- Sheet: ativos ganham faixa laranja de 3px à esquerda.
+## 5. Entregas demonstradas
 
-### 8. PageHeader
-- No mobile: título 24px (não 30px), subtítulo 13px. Ações descem para nova linha quando faltar largura (flex-wrap).
+Após implementar, mostrar:
+- Home (`/`) com tabs/chips de grupo + lista de jogos densa + tabela compacta.
+- Tela de palpite (`/palpitar/:id`) com novo cabeçalho do jogo e botões padronizados.
 
-### 9. Cards de jogo/ganhadores no admin
-- Aplicar mesmo padrão de confronto da home (siglas grandes, placar em chip) para consistência.
-- Tabelas que estouram viram listas de cards no breakpoint `<md`.
+## Não-objetivos
 
-## Tokens & CSS (`src/styles.css`)
-- Adicionar utilitários:
-  - `.tabular` → `font-variant-numeric: tabular-nums;`
-  - `.placar-chip` → fundo `--cl-verde-escuro`, texto branco, radius 12, padding 6/12, display tabular.
-  - `.safe-bottom` → `padding-bottom: max(12px, env(safe-area-inset-bottom));`
-- Ajustar `.glass` para sombra menor no mobile via media query (mantendo desktop como está).
-- Garantir `html { -webkit-text-size-adjust: 100%; }` para evitar zoom automático no iOS.
-
-## Arquivos a editar
-
-```text
-src/styles.css                                  (utilitários + ajustes glass/safe-area)
-src/components/site/HeaderCliente.tsx           (altura, alvos de toque)
-src/components/site/LayoutCliente.tsx           (padding-bottom safe-area)
-src/components/site/BannerCopa.tsx              (densidade mobile)
-src/components/jogos/CardJogoAberto.tsx         (novo layout confronto)
-src/components/jogos/ListaJogos.tsx             (resultados em cards + chip)
-src/routes/index.tsx                            (espaçamentos, SectionTitle)
-src/routes/palpitar.$jogoId.tsx                 (selo, placar maior, sticky safe-area)
-src/routes/confirmacao.tsx                      (placar chip, comanda pill)
-src/components/admin/AdminShell.tsx             (topbar mobile, PageHeader)
-src/routes/admin.index.tsx                      (consistência de cards)
-src/routes/admin.jogos.tsx                      (tabela→cards no mobile)
-src/routes/admin.jogo.$id.tsx                   (placar chip + comandas em cards)
-src/routes/admin.sorteios.tsx                   (consistência)
-src/routes/admin.usuarios.tsx                   (cards mobile)
-```
-
-## Fora de escopo
-- Mudanças de paleta, fontes, copy, fluxo de negócio, RPCs, schema, autenticação.
-- Adicionar bibliotecas novas (sem framer-motion etc. — animações com CSS).
-- Refatorações que não impactem mobile/visual.
-
-## Verificação
-1. Preview em 375×812 (iPhone SE), 390×844 (iPhone padrão) e 414×896.
-2. Conferir home, palpitar, confirmação, /admin, /admin/jogo/:id sem scroll horizontal e sem texto cortado.
-3. Smoke test do fluxo: cadastro → palpitar → confirmação.
+- Não trocar paleta nem remover marca.
+- Não mexer em rotas, dados, RPCs, Realtime ou lógica de admin.
+- Não alterar fluxos de cadastro/confirmação.

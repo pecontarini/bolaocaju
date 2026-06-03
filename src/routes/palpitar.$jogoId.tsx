@@ -218,7 +218,7 @@ function PalpitarJogoPage() {
           <p className="text-xs text-cl-cinza-texto uppercase tracking-wide">
             Olá,
           </p>
-          <p className="font-display text-cl-verde-escuro text-xl leading-tight truncate max-w-[220px]">
+          <p className="font-display text-cl-verde-escuro text-2xl leading-tight truncate max-w-[220px]">
             {nome}
           </p>
         </div>
@@ -235,7 +235,7 @@ function PalpitarJogoPage() {
 
       <section className="rounded-2xl bg-card border-2 border-cl-verde shadow-sm overflow-hidden mb-4">
         <div className="bg-cl-verde text-white px-4 py-2 text-center">
-          <p className="font-display uppercase tracking-wide text-sm">
+          <p className="font-display text-base leading-none">
             Qual o placar?
           </p>
         </div>
@@ -247,7 +247,7 @@ function PalpitarJogoPage() {
             onChange={setPlacarA}
             disabled={geo.status !== "ok"}
           />
-          <div className="font-display text-3xl text-cl-cinza-texto px-1">×</div>
+          <div className="text-2xl text-cl-cinza-texto px-1">×</div>
           <BlocoPlacar
             nome={jogo.time_b}
             codigo={jogo.codigo_b}
@@ -272,7 +272,7 @@ function PalpitarJogoPage() {
       <section className="rounded-2xl bg-card border-2 border-cl-verde shadow-sm p-4 mb-4">
         <label
           htmlFor="comanda"
-          className="flex items-center gap-2 font-display text-cl-verde-escuro text-base"
+          className="flex items-center gap-2 font-display text-cl-verde-escuro text-lg"
         >
           <Receipt className="size-5 text-cl-laranja" />
           Número da comanda
@@ -293,7 +293,7 @@ function PalpitarJogoPage() {
           }
           placeholder="Ex.: 27"
           disabled={geo.status !== "ok"}
-          className="mt-3 w-full h-14 rounded-xl bg-white border border-cl-verde/30 text-center text-3xl font-display tabular-nums text-cl-verde-escuro focus:outline-none focus:ring-2 focus:ring-cl-verde disabled:opacity-50"
+          className="mt-3 w-full h-14 rounded-xl bg-white border border-cl-verde/30 text-center text-3xl font-semibold num text-cl-verde-escuro focus:outline-none focus:ring-2 focus:ring-cl-verde disabled:opacity-50"
           aria-invalid={!comandaValida && comandaStr !== ""}
         />
         {!comandaValida && comandaStr !== "" && (
@@ -330,7 +330,7 @@ function RegrasBolao() {
     <section className="rounded-2xl bg-cl-verde-claro/30 border border-cl-verde/30 p-4 mb-4">
       <div className="flex items-center gap-2 mb-2">
         <Info className="size-4 text-cl-verde-escuro" />
-        <p className="font-display text-cl-verde-escuro text-sm uppercase tracking-wide">
+        <p className="font-display text-cl-verde-escuro text-base">
           Como funciona
         </p>
       </div>
@@ -384,7 +384,7 @@ function BlocoPlacar({
           <Minus className="size-5" />
         </button>
         <div
-          className="w-14 h-14 rounded-xl bg-cl-verde-escuro text-white font-display text-3xl flex items-center justify-center tabular-nums"
+          className="w-14 h-14 rounded-xl bg-cl-verde-escuro text-white text-3xl font-semibold flex items-center justify-center num"
           aria-live="polite"
         >
           {valor}
