@@ -9,7 +9,7 @@ import {
   type LinhaClassificacao,
 } from "@/components/jogos/TabelaClassificacao";
 import type { Jogo } from "@/lib/jogos";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useJogosRealtime } from "@/hooks/useJogosRealtime";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -110,6 +110,9 @@ function CarrosselGrupos({
   carregando: boolean;
 }) {
   const [ativo, setAtivo] = useState<string | null>(null);
+  const swiperRef = useRef<HTMLDivElement | null>(null);
+  const slideRefs = useRef<Map<string, HTMLElement | null>>(new Map());
+  const scrollProgrammatic = useRef(false);
 
   const classPorGrupo = useMemo(() => {
     const m = new Map<string, LinhaClassificacao[]>();
@@ -122,6 +125,39 @@ function CarrosselGrupos({
 
   useEffect(() => {
     if (!ativo && grupos.length) setAtivo(grupos[0]);
+  }, [grupos, ativo]);
+
+  function irPara(g: string) {
+    setAtivo(g);
+    const el = slideRefs.current.get(g);
+    if (el && swiperRef.current) {
+      scrollProgrammatic.current = true;
+      swiperRef.current.scrollTo({ left: el.offsetLeft, behavior: "smooth" });
+      window.setTimeout(() => {
+        scrollProgrammatic.current = false;
+      }, 600);
+    }
+  }
+
+  // Sincroniza pílula ativa com o slide visível durante o swipe.
+  useEffect(() => {
+    const root = swiperRef.current;
+    if (!root || !grupos.length) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (scrollProgrammatic.current) return;
+        const visivel = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visivel) {
+          const g = (visivel.target as HTMLElement).dataset.grupo;
+          if (g && g !== ativo) setAtivo(g);
+        }
+      },
+      { root, threshold: [0.55, 0.75] },
+    );
+    slideRefs.current.forEach((el) => el && obs.observe(el));
+    return () => obs.disconnect();
   }, [grupos, ativo]);
 
   if (carregando) {
@@ -158,7 +194,7 @@ function CarrosselGrupos({
                 type="button"
                 role="tab"
                 aria-selected={isAtivo}
-                onClick={() => setAtivo(g)}
+                onClick={() => irPara(g)}
                 className={
                   isAtivo
                     ? "px-4 py-2 rounded-full bg-cl-verde text-white text-sm font-semibold shadow-sm whitespace-nowrap transition-colors"
@@ -172,15 +208,28 @@ function CarrosselGrupos({
         </div>
       </div>
 
-      {/* Tabela do grupo ativo (com fade-in suave ao trocar) */}
+      {/* Swipe horizontal pelos grupos — sem indicadores visuais (as pílulas
+          servem de marcador). Snap por grupo, scrollbar oculta. */}
       <div
-        key={grupoAtivo}
-        className="animate-in fade-in-0 slide-in-from-bottom-1 duration-200"
+        ref={swiperRef}
+        className="-mx-4 flex overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth touch-pan-x overscroll-x-contain"
+        style={{ scrollbarWidth: "none" }}
       >
-        <TabelaClassificacao
-          grupo={grupoAtivo}
-          linhas={classPorGrupo.get(grupoAtivo) ?? []}
-        />
+        {grupos.map((g) => (
+          <section
+            key={g}
+            data-grupo={g}
+            ref={(el) => {
+              slideRefs.current.set(g, el);
+            }}
+            className="snap-center shrink-0 w-full px-4"
+          >
+            <TabelaClassificacao
+              grupo={g}
+              linhas={classPorGrupo.get(g) ?? []}
+            />
+          </section>
+        ))}
       </div>
     </div>
   );
