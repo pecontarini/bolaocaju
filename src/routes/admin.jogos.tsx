@@ -142,7 +142,7 @@ function ListaJogosPage() {
           Nenhum jogo encontrado com esses filtros.
         </div>
       ) : (
-        <ul className="glass rounded-2xl divide-y divide-cl-verde/10 overflow-hidden">
+        <ul className="glass-data rounded-2xl divide-y divide-cl-verde/10 overflow-hidden">
           {filtrados.map((j) => (
             <li
               key={j.id}

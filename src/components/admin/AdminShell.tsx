@@ -65,7 +65,9 @@ function HeaderAdmin({ email }: { email: string }) {
               (e.currentTarget as HTMLImageElement).style.display = "none";
             }}
           />
-          <span className="badge-encerrado ml-1">Admin</span>
+          <span className="ml-1 inline-flex items-center rounded-full bg-cl-verde/12 text-cl-verde-escuro text-[10px] font-semibold uppercase tracking-[0.14em] px-2 py-0.5 border border-cl-verde/25">
+            Admin
+          </span>
         </Link>
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>

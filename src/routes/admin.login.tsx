@@ -56,18 +56,24 @@ function AdminLoginPage() {
         onSubmit={handleSubmit}
         className="w-full max-w-[420px] glass rounded-3xl p-7 space-y-5"
       >
-        <div className="flex flex-col items-center">
+        <div className="flex flex-col items-center text-center">
           <img
             src="/assets/01-logo-horizontal-verde.png"
             alt="Caju Limão"
-            className="h-16 w-auto"
+            className="h-14 w-auto"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = "none";
+            }}
           />
-          <p className="font-display text-cl-verde-escuro text-xl mt-3">
-            Painel administrativo
+          <h1 className="font-display font-bold text-cl-verde text-3xl mt-3 leading-tight">
+            Bolão Caju Limão
+          </h1>
+          <p className="text-[11px] uppercase tracking-[0.18em] text-cl-cinza-texto mt-1">
+            Painel da gerência
           </p>
-          <p className="text-xs text-cl-cinza-texto">
-            Acesso restrito da gerência
-          </p>
+          <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-cl-verde/10 text-cl-verde-escuro text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 border border-cl-verde/20">
+            Acesso restrito
+          </span>
         </div>
 
         <div className="space-y-3">
