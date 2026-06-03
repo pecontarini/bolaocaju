@@ -27,7 +27,17 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Bandeira } from "@/components/jogos/Bandeira";
-import { ChevronRight, Info, UtensilsCrossed } from "lucide-react";
+import {
+  ChevronRight,
+  Info,
+  UtensilsCrossed,
+  Trophy,
+  Users,
+  MapPin,
+  Globe2,
+  Ticket,
+  CalendarDays,
+} from "lucide-react";
 import { toast } from "sonner";
 
 /* ----------------------------- Config ----------------------------- */
@@ -156,24 +166,58 @@ function AbaVisaoGeral() {
     1,
   );
 
-  // jogo "de agora" = aberto e dentro de janela curta (palpites não encerrados)
-  const jogoAgora = useQuery({
-    queryKey: ["home", "jogo-agora"],
+  // Próximo jogo (ou jogo ao vivo agora). Prioriza ao vivo.
+  const proximoJogo = useQuery({
+    queryKey: ["home", "proximo-jogo"],
     queryFn: async () => {
-      const agora = new Date().toISOString();
-      const limite = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
-      const { data, error } = await supabase
+      const agora = new Date();
+      const inicioJanela = new Date(agora.getTime() - 30 * 60 * 1000).toISOString();
+      const fimJanela = new Date(agora.getTime() + 2 * 60 * 60 * 1000).toISOString();
+
+      // 1. Ao vivo / aberto agora
+      const aoVivo = await supabase
         .from("jogos")
         .select(COLUNAS)
         .eq("palpites_encerrados", false)
-        .gte("data_hora_inicio", new Date(Date.now() - 30 * 60 * 1000).toISOString())
-        .lte("data_hora_inicio", limite)
+        .gte("data_hora_inicio", inicioJanela)
+        .lte("data_hora_inicio", fimJanela)
         .order("data_hora_inicio", { ascending: true })
         .limit(1);
-      if (error) throw error;
-      return ((data ?? []) as Jogo[])[0] ?? null;
+      if (aoVivo.error) throw aoVivo.error;
+      const vivo = ((aoVivo.data ?? []) as Jogo[])[0];
+      if (vivo) return { jogo: vivo, aoVivo: true };
+
+      // 2. Próximo agendado
+      const prox = await supabase
+        .from("jogos")
+        .select(COLUNAS)
+        .gte("data_hora_inicio", agora.toISOString())
+        .order("data_hora_inicio", { ascending: true })
+        .limit(1);
+      if (prox.error) throw prox.error;
+      const j = ((prox.data ?? []) as Jogo[])[0] ?? null;
+      return j ? { jogo: j, aoVivo: false } : null;
     },
     refetchInterval: 60_000,
+  });
+
+  // Números da Copa: 104 jogos / cidades distintas
+  const numerosCopa = useQuery({
+    queryKey: ["home", "numeros-copa"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("jogos")
+        .select("cidade");
+      if (error) throw error;
+      const cidades = new Set<string>();
+      for (const r of (data ?? []) as { cidade: string | null }[]) {
+        if (r.cidade) cidades.add(r.cidade);
+      }
+      return {
+        totalJogos: (data ?? []).length || 104,
+        totalSedes: cidades.size || 16,
+      };
+    },
   });
 
   const [cardapioAberto, setCardapioAberto] = useState(false);
@@ -182,7 +226,7 @@ function AbaVisaoGeral() {
     <div className="space-y-5">
       {/* Hero */}
       <section
-        className="relative overflow-hidden rounded-3xl glass px-5 pt-6 pb-7 text-center"
+        className="relative overflow-hidden rounded-3xl glass px-5 pt-5 pb-6 text-center"
         data-textura="hero"
       >
         <div
@@ -197,7 +241,7 @@ function AbaVisaoGeral() {
         <img
           src="/assets/05-logo-com-adornos-emblema.png"
           alt="Caju Limão"
-          className="mx-auto h-24 w-auto"
+          className="mx-auto h-20 w-auto"
           onError={(e) => {
             const img = e.currentTarget as HTMLImageElement;
             if (!img.dataset.fb) {
@@ -208,13 +252,19 @@ function AbaVisaoGeral() {
             }
           }}
         />
-        <p className="mt-2 font-display text-xl text-cl-verde-escuro">
+        <p className="mt-2 font-display text-3xl font-bold text-cl-verde-escuro leading-tight">
           Bolão Caju Limão
         </p>
-        <p className="text-[12px] text-cl-cinza-texto uppercase tracking-wider">
+        <p className="mt-1 text-[11px] text-cl-cinza-texto uppercase tracking-[0.18em]">
           Copa do Mundo FIFA 2026
         </p>
       </section>
+
+      {/* Próximo jogo / Jogo de agora */}
+      <SecaoProximoJogo
+        loading={proximoJogo.isLoading}
+        dados={proximoJogo.data ?? null}
+      />
 
       {/* Estado da Copa */}
       <section className="glass rounded-3xl p-5">
@@ -275,21 +325,37 @@ function AbaVisaoGeral() {
         )}
       </section>
 
-      {/* Jogo de agora (se houver) */}
-      {jogoAgora.data && (
-        <section>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="pulse-dot" aria-hidden />
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-cl-laranja">
-              Jogo de agora
-            </p>
-          </div>
-          <CardJogoAberto jogo={jogoAgora.data} />
-        </section>
-      )}
+      {/* A Copa em números */}
+      <section>
+        <HeaderSecao titulo="A Copa em números" />
+        <div className="grid grid-cols-2 gap-2.5">
+          <MiniCard
+            icon={<Users className="size-5" />}
+            valor="48"
+            rotulo="seleções"
+          />
+          <MiniCard
+            icon={<Trophy className="size-5" />}
+            valor={String(numerosCopa.data?.totalJogos ?? 104)}
+            rotulo="jogos"
+          />
+          <MiniCard
+            icon={<MapPin className="size-5" />}
+            valor={String(numerosCopa.data?.totalSedes ?? 16)}
+            rotulo="sedes"
+          />
+          <MiniCard
+            icon={<Globe2 className="size-5" />}
+            valor="3"
+            rotulo="países"
+          />
+        </div>
+      </section>
 
       {/* Botões */}
-      <section className="grid grid-cols-1 gap-3">
+      <section>
+        <HeaderSecao titulo="Atalhos" />
+        <div className="grid grid-cols-1 gap-2.5">
         <Link
           to="/sobre-copa"
           className="glass rounded-2xl p-4 flex items-center gap-3 card-press"
@@ -303,6 +369,24 @@ function AbaVisaoGeral() {
             </span>
             <span className="block text-xs text-cl-cinza-texto">
               Regras do bolão e da competição
+            </span>
+          </span>
+          <ChevronRight className="size-5 text-cl-cinza-texto" />
+        </Link>
+
+        <Link
+          to="/meus-palpites"
+          className="glass rounded-2xl p-4 flex items-center gap-3 card-press"
+        >
+          <span className="size-10 rounded-full bg-cl-verde/15 flex items-center justify-center text-cl-verde-escuro">
+            <Ticket className="size-5" />
+          </span>
+          <span className="flex-1">
+            <span className="block font-display text-lg text-cl-verde-escuro leading-tight">
+              Meus palpites
+            </span>
+            <span className="block text-xs text-cl-cinza-texto">
+              Acompanhe seus chutes na Copa
             </span>
           </span>
           <ChevronRight className="size-5 text-cl-cinza-texto" />
@@ -326,6 +410,7 @@ function AbaVisaoGeral() {
           </span>
           <ChevronRight className="size-5 text-cl-cinza-texto" />
         </button>
+        </div>
       </section>
 
       <EscolhaUnidadeDialog
@@ -333,6 +418,182 @@ function AbaVisaoGeral() {
         onMudou={setCardapioAberto}
       />
     </div>
+  );
+}
+
+function HeaderSecao({ titulo }: { titulo: string }) {
+  return (
+    <div className="flex items-center gap-2 mb-2.5 px-0.5">
+      <img
+        src="/assets/08-selo-circular-verde.png"
+        alt=""
+        className="h-5 w-5"
+        onError={(e) => {
+          (e.currentTarget as HTMLImageElement).style.display = "none";
+        }}
+      />
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cl-verde-escuro">
+        {titulo}
+      </p>
+    </div>
+  );
+}
+
+function MiniCard({
+  icon,
+  valor,
+  rotulo,
+}: {
+  icon: React.ReactNode;
+  valor: string;
+  rotulo: string;
+}) {
+  return (
+    <div className="glass rounded-2xl p-3.5 flex items-center gap-3">
+      <span className="size-9 rounded-full bg-cl-verde/10 flex items-center justify-center text-cl-verde">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <p className="font-display text-2xl font-bold leading-none text-cl-verde-escuro tabular-nums">
+          {valor}
+        </p>
+        <p className="text-[11px] text-cl-cinza-texto uppercase tracking-wider mt-0.5">
+          {rotulo}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function SecaoProximoJogo({
+  loading,
+  dados,
+}: {
+  loading: boolean;
+  dados: { jogo: Jogo; aoVivo: boolean } | null;
+}) {
+  if (loading) {
+    return (
+      <section>
+        <HeaderSecao titulo="Próximo jogo" />
+        <div className="glass rounded-3xl p-5 animate-pulse h-32" />
+      </section>
+    );
+  }
+  if (!dados) return null;
+
+  const { jogo, aoVivo } = dados;
+  const envolveBrasil = !!jogo.envolve_brasil;
+  const dataFmt = format(
+    new Date(jogo.data_hora_inicio),
+    "EEE, dd 'de' MMM • HH'h'mm",
+    { locale: ptBR },
+  ).replace(/^./, (c) => c.toUpperCase());
+  const local = [jogo.estadio, jogo.cidade].filter(Boolean).join(" — ");
+
+  return (
+    <section>
+      <div className="flex items-center gap-2 mb-2.5 px-0.5">
+        {aoVivo ? (
+          <>
+            <span className="pulse-dot" aria-hidden />
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cl-laranja">
+              Jogo de agora
+            </p>
+          </>
+        ) : (
+          <>
+            <img
+              src="/assets/08-selo-circular-verde.png"
+              alt=""
+              className="h-5 w-5"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = "none";
+              }}
+            />
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cl-verde-escuro">
+              Próximo jogo
+            </p>
+          </>
+        )}
+        {envolveBrasil && (
+          <span className="text-[9px] font-semibold uppercase tracking-wider bg-cl-laranja text-white rounded-full px-2 py-0.5">
+            Brasil
+          </span>
+        )}
+      </div>
+
+      <article
+        className={`glass rounded-3xl p-4 ${
+          envolveBrasil ? "ring-1 ring-cl-laranja/40" : ""
+        }`}
+      >
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+          <div className="flex flex-col items-center gap-1.5 text-center min-w-0">
+            <Bandeira codigo={jogo.codigo_a} tamanho={40} />
+            <p
+              className={`text-sm leading-tight truncate w-full ${
+                jogo.codigo_a === "BRA"
+                  ? "font-display font-semibold text-cl-verde-escuro"
+                  : "font-medium text-cl-verde-escuro"
+              }`}
+            >
+              {jogo.time_a}
+            </p>
+          </div>
+          <div className="flex flex-col items-center">
+            {aoVivo && jogo.placar_a !== null && jogo.placar_b !== null ? (
+              <span className="placar-chip text-xl">
+                <span>{jogo.placar_a}</span>
+                <span className="x">×</span>
+                <span>{jogo.placar_b}</span>
+              </span>
+            ) : (
+              <span className="font-display text-2xl text-cl-verde-escuro/40 font-bold">
+                ×
+              </span>
+            )}
+          </div>
+          <div className="flex flex-col items-center gap-1.5 text-center min-w-0">
+            <Bandeira codigo={jogo.codigo_b} tamanho={40} />
+            <p
+              className={`text-sm leading-tight truncate w-full ${
+                jogo.codigo_b === "BRA"
+                  ? "font-display font-semibold text-cl-verde-escuro"
+                  : "font-medium text-cl-verde-escuro"
+              }`}
+            >
+              {jogo.time_b}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-3 pt-3 border-t border-border/50 space-y-1.5">
+          <div className="flex items-center gap-1.5 text-xs text-cl-cinza-texto">
+            <CalendarDays className="size-3.5 shrink-0" />
+            <span className="truncate">{dataFmt}</span>
+          </div>
+          {local && (
+            <div className="flex items-center gap-1.5 text-xs text-cl-cinza-texto">
+              <MapPin className="size-3.5 shrink-0" />
+              <span className="truncate">{local}</span>
+            </div>
+          )}
+        </div>
+
+        <Link
+          to="/palpitar/$jogoId"
+          params={{ jogoId: jogo.id }}
+          className={`mt-3 block w-full text-center rounded-full px-4 py-2.5 text-sm font-semibold transition-colors ${
+            envolveBrasil
+              ? "bg-cl-laranja text-white hover:bg-cl-laranja/90"
+              : "bg-cl-verde text-white hover:bg-cl-verde/90"
+          }`}
+        >
+          {aoVivo ? "Ver jogo" : "Palpitar"}
+        </Link>
+      </article>
+    </section>
   );
 }
 
