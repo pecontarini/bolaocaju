@@ -12,6 +12,8 @@ import { FaixaAzulejos } from "@/components/site/FaixaAzulejos";
 import type { Jogo } from "@/lib/jogos";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useJogosRealtime } from "@/hooks/useJogosRealtime";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -47,22 +49,8 @@ function HomeCliente() {
     },
   });
 
-  const jogosGrupos = useQuery({
-    queryKey: ["home", "jogos-fase-grupos"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("jogos")
-        .select(COLUNAS)
-        .eq("fase", "fase_grupos")
-        .order("data_hora_inicio", { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as Jogo[];
-    },
-    refetchInterval: 30_000,
-  });
-
   const classificacao = useQuery({
-    queryKey: ["classificacao-home"],
+    queryKey: ["home", "classificacao"],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("fn_classificacao");
       if (error) throw error;
@@ -71,61 +59,79 @@ function HomeCliente() {
     refetchInterval: 60_000,
   });
 
-  const listaGrupos = grupos.data ?? [];
+  const jogos = useQuery({
+    queryKey: ["home", "jogos-todos"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("jogos")
+        .select(COLUNAS)
+        .order("data_hora_inicio", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as Jogo[];
+    },
+    refetchInterval: 30_000,
+  });
 
-  const jogosPorGrupo = useMemo(() => {
-    const m = new Map<string, Jogo[]>();
-    for (const j of jogosGrupos.data ?? []) {
-      if (!j.grupo) continue;
-      if (!m.has(j.grupo)) m.set(j.grupo, []);
-      m.get(j.grupo)!.push(j);
-    }
-    return m;
-  }, [jogosGrupos.data]);
+  return (
+    <LayoutCliente>
+      <h1 className="sr-only">Bolão Caju Limão</h1>
+
+      {/* Bloco 1: carrossel de grupos */}
+      <section className="mb-2">
+        <HeaderClassificacao titulo="Grupos" />
+        <CarrosselGrupos
+          grupos={grupos.data ?? []}
+          classificacao={classificacao.data ?? []}
+          carregando={grupos.isLoading || classificacao.isLoading}
+        />
+      </section>
+
+      <FaixaAzulejos className="my-6 opacity-90" />
+
+      {/* Bloco 2: jogos em ordem cronológica */}
+      <section>
+        <SectionTitle>Jogos</SectionTitle>
+        {jogos.isLoading ? (
+          <SkeletonList />
+        ) : (
+          <ListaJogosCronologica jogos={jogos.data ?? []} />
+        )}
+      </section>
+    </LayoutCliente>
+  );
+}
+
+/* ----------------------------- Carrossel de Grupos ----------------------------- */
+
+function CarrosselGrupos({
+  grupos,
+  classificacao,
+  carregando,
+}: {
+  grupos: string[];
+  classificacao: LinhaClassificacao[];
+  carregando: boolean;
+}) {
+  const swiperRef = useRef<HTMLDivElement | null>(null);
+  const slideRefs = useRef<Map<string, HTMLElement | null>>(new Map());
+  const [ativo, setAtivo] = useState<string | null>(null);
+  const scrollProgrammatic = useRef(false);
 
   const classPorGrupo = useMemo(() => {
     const m = new Map<string, LinhaClassificacao[]>();
-    for (const c of classificacao.data ?? []) {
+    for (const c of classificacao) {
       if (!m.has(c.grupo)) m.set(c.grupo, []);
       m.get(c.grupo)!.push(c);
     }
     return m;
-  }, [classificacao.data]);
+  }, [classificacao]);
 
-  const grupoInicial = useMemo(() => {
-    if (!listaGrupos.length) return null;
-    const agora = Date.now();
-    const prox = (jogosGrupos.data ?? [])
-      .filter(
-        (j) =>
-          j.grupo &&
-          listaGrupos.includes(j.grupo) &&
-          new Date(j.data_hora_inicio).getTime() >= agora,
-      )
-      .sort(
-        (a, b) =>
-          new Date(a.data_hora_inicio).getTime() -
-          new Date(b.data_hora_inicio).getTime(),
-      )[0];
-    return prox?.grupo ?? listaGrupos[0];
-  }, [listaGrupos, jogosGrupos.data]);
-
-  const [grupoAtivo, setGrupoAtivo] = useState<string | null>(null);
-  const inicializou = useRef(false);
   useEffect(() => {
-    if (!inicializou.current && grupoInicial) {
-      setGrupoAtivo(grupoInicial);
-      inicializou.current = true;
-    }
-  }, [grupoInicial]);
-
-  const swiperRef = useRef<HTMLDivElement | null>(null);
-  const slideRefs = useRef<Map<string, HTMLElement | null>>(new Map());
-  const chipRefs = useRef<Map<string, HTMLButtonElement | null>>(new Map());
-  const scrollProgrammatic = useRef(false);
+    if (!ativo && grupos.length) setAtivo(grupos[0]);
+  }, [grupos, ativo]);
 
   function irPara(g: string) {
-    setGrupoAtivo(g);
+    setAtivo(g);
     const el = slideRefs.current.get(g);
     if (el && swiperRef.current) {
       scrollProgrammatic.current = true;
@@ -134,30 +140,11 @@ function HomeCliente() {
         scrollProgrammatic.current = false;
       }, 600);
     }
-    chipRefs.current
-      .get(g)
-      ?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
   }
 
-  // posiciona no slide inicial (sem animar) quando os refs estiverem prontos
-  useEffect(() => {
-    if (!grupoAtivo || !swiperRef.current) return;
-    const el = slideRefs.current.get(grupoAtivo);
-    if (!el) return;
-    if (Math.abs(swiperRef.current.scrollLeft - el.offsetLeft) < 4) return;
-    scrollProgrammatic.current = true;
-    swiperRef.current.scrollLeft = el.offsetLeft;
-    window.setTimeout(() => {
-      scrollProgrammatic.current = false;
-    }, 80);
-    // só posiciona uma vez quando muda a lista; clicks usam irPara()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [listaGrupos.length]);
-
-  // sincroniza chip ao arrastar
   useEffect(() => {
     const root = swiperRef.current;
-    if (!root || !listaGrupos.length) return;
+    if (!root || !grupos.length) return;
     const obs = new IntersectionObserver(
       (entries) => {
         if (scrollProgrammatic.current) return;
@@ -166,161 +153,237 @@ function HomeCliente() {
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
         if (visivel) {
           const g = (visivel.target as HTMLElement).dataset.grupo;
-          if (g && g !== grupoAtivo) {
-            setGrupoAtivo(g);
-            chipRefs.current
-              .get(g)
-              ?.scrollIntoView({
-                behavior: "smooth",
-                inline: "center",
-                block: "nearest",
-              });
-          }
+          if (g && g !== ativo) setAtivo(g);
         }
       },
       { root, threshold: [0.55, 0.75] },
     );
     slideRefs.current.forEach((el) => el && obs.observe(el));
     return () => obs.disconnect();
-  }, [listaGrupos, grupoAtivo]);
+  }, [grupos, ativo]);
 
-  const carregando =
-    grupos.isLoading || jogosGrupos.isLoading || classificacao.isLoading;
+  if (carregando) {
+    return (
+      <div className="rounded-2xl border border-border bg-white p-4 animate-pulse h-72" />
+    );
+  }
 
-  return (
-    <LayoutCliente>
-      <h1 className="sr-only">Bolão Caju Limão — Grupos da Copa</h1>
-
-      <div className="mb-3">
-        <p className="font-display text-cl-verde-escuro text-2xl leading-tight">
-          Grupos da Copa
-        </p>
+  if (!grupos.length) {
+    return (
+      <div className="rounded-2xl border-2 border-dashed border-cl-verde/40 p-6 text-center">
         <p className="text-sm text-cl-cinza-texto">
-          Toque num grupo ou arraste pro lado.
+          Nenhum grupo cadastrado ainda.
         </p>
       </div>
+    );
+  }
 
-      {/* Chips de grupos */}
-      <div className="-mx-4 px-4 mb-4 overflow-x-auto no-scrollbar">
-        <div className="flex gap-2 w-max pr-4">
-          {grupos.isLoading
-            ? Array.from({ length: 6 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-10 w-12 rounded-full bg-muted animate-pulse"
-                />
-              ))
-            : listaGrupos.map((g) => {
-                const ativo = g === grupoAtivo;
-                return (
-                  <button
-                    key={g}
-                    type="button"
-                    ref={(el) => {
-                      chipRefs.current.set(g, el);
-                    }}
-                    onClick={() => irPara(g)}
-                    aria-pressed={ativo}
-                    className={`min-w-[3rem] h-10 px-4 rounded-full font-display text-base tracking-wider transition-colors border ${
-                      ativo
-                        ? "bg-cl-verde-escuro text-white border-cl-verde-escuro shadow-[0_6px_18px_-10px_rgba(28,59,22,0.7)]"
-                        : "bg-white text-cl-verde-escuro border-border hover:bg-cl-verde-claro"
-                    }`}
-                  >
-                    {g}
-                  </button>
-                );
-              })}
-        </div>
-      </div>
-
-      <FaixaAzulejos className="mb-4 opacity-90" />
-
-      {carregando ? (
-        <SkeletonCard />
-      ) : listaGrupos.length === 0 ? (
-        <SemGrupos />
-      ) : (
-        <div
-          ref={swiperRef}
-          className="-mx-4 flex overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth touch-pan-x"
-          style={{ scrollbarWidth: "none" }}
-        >
-          {listaGrupos.map((g) => (
-            <section
-              key={g}
-              data-grupo={g}
-              ref={(el) => {
-                slideRefs.current.set(g, el);
-              }}
-              className="snap-center shrink-0 w-full px-4"
-            >
-              <SlideGrupo
-                grupo={g}
-                linhas={classPorGrupo.get(g) ?? []}
-                jogos={jogosPorGrupo.get(g) ?? []}
-              />
-            </section>
-          ))}
-        </div>
-      )}
-    </LayoutCliente>
-  );
-}
-
-function SlideGrupo({
-  grupo,
-  linhas,
-  jogos,
-}: {
-  grupo: string;
-  linhas: LinhaClassificacao[];
-  jogos: Jogo[];
-}) {
   return (
-    <div className="space-y-5">
-      <div>
-        <HeaderClassificacao titulo={`Classificação do Grupo ${grupo}`} />
-        <TabelaClassificacao grupo={grupo} linhas={linhas} />
+    <div>
+      <div
+        ref={swiperRef}
+        className="-mx-4 flex overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth touch-pan-x"
+        style={{ scrollbarWidth: "none" }}
+      >
+        {grupos.map((g) => (
+          <section
+            key={g}
+            data-grupo={g}
+            ref={(el) => {
+              slideRefs.current.set(g, el);
+            }}
+            className="snap-center shrink-0 w-full px-4"
+          >
+            <TabelaClassificacao
+              grupo={g}
+              linhas={classPorGrupo.get(g) ?? []}
+            />
+          </section>
+        ))}
       </div>
-      <div>
-        <HeaderClassificacao titulo={`Jogos do Grupo ${grupo}`} />
-        {jogos.length === 0 ? (
-          <p className="text-sm text-cl-cinza-texto px-1">
-            Nenhum jogo cadastrado para este grupo.
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {jogos.map((j) => (
-              <CardJogoAberto key={j.id} jogo={j} />
-            ))}
-          </div>
-        )}
+
+      {/* Indicadores (chips A-L) */}
+      <div className="-mx-4 px-4 mt-3 overflow-x-auto no-scrollbar">
+        <div className="flex gap-1.5 w-max pr-4 justify-center mx-auto">
+          {grupos.map((g) => {
+            const isAtivo = g === ativo;
+            return (
+              <button
+                key={g}
+                type="button"
+                onClick={() => irPara(g)}
+                aria-label={`Grupo ${g}`}
+                aria-pressed={isAtivo}
+                className={`h-8 min-w-8 px-2.5 rounded-full font-display text-sm tracking-wider border transition-colors ${
+                  isAtivo
+                    ? "bg-cl-verde-escuro text-white border-cl-verde-escuro shadow-[0_4px_14px_-8px_rgba(28,59,22,0.7)]"
+                    : "bg-white text-cl-verde-escuro border-border"
+                }`}
+              >
+                {g}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
 }
 
-function SemGrupos() {
-  return (
-    <section className="rounded-2xl bg-card border-2 border-dashed border-cl-verde/40 p-6 text-center">
-      <p className="font-display text-cl-verde-escuro text-xl">
-        Nenhum grupo disponível
-      </p>
-      <p className="text-sm text-cl-cinza-texto mt-1">
-        Os grupos da Copa aparecem aqui assim que forem cadastrados.
-      </p>
-    </section>
+/* --------------------------- Lista cronológica de jogos --------------------------- */
+
+function chaveDia(iso: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(iso));
+}
+
+function chaveHoje(): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+function rotuloDia(iso: string, hojeKey: string): string {
+  if (chaveDia(iso) === hojeKey) return "Hoje";
+  return format(new Date(iso), "EEEE, dd 'de' MMM", { locale: ptBR }).replace(
+    /^./,
+    (c) => c.toUpperCase(),
   );
 }
 
-function SkeletonCard() {
+function ListaJogosCronologica({ jogos }: { jogos: Jogo[] }) {
+  const hojeKey = chaveHoje();
+
+  const { passados, hojeEFuturos } = useMemo(() => {
+    const p: Jogo[] = [];
+    const f: Jogo[] = [];
+    for (const j of jogos) {
+      const k = chaveDia(j.data_hora_inicio);
+      if (k < hojeKey) p.push(j);
+      else f.push(j);
+    }
+    return { passados: p, hojeEFuturos: f };
+  }, [jogos, hojeKey]);
+
+  const gruposFuturos = useMemo(() => {
+    const m = new Map<string, Jogo[]>();
+    for (const j of hojeEFuturos) {
+      const k = chaveDia(j.data_hora_inicio);
+      if (!m.has(k)) m.set(k, []);
+      m.get(k)!.push(j);
+    }
+    return Array.from(m.entries());
+  }, [hojeEFuturos]);
+
+  const [verPassados, setVerPassados] = useState(false);
+
+  if (jogos.length === 0) {
+    return (
+      <div className="rounded-2xl border-2 border-dashed border-cl-verde/40 p-6 text-center">
+        <p className="text-sm text-cl-cinza-texto">
+          Nenhum jogo cadastrado ainda.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="rounded-2xl bg-card border border-border p-6 animate-pulse">
-      <div className="h-4 w-32 bg-muted rounded mb-3" />
-      <div className="h-6 w-3/4 bg-muted rounded mb-2" />
-      <div className="h-4 w-1/2 bg-muted rounded mb-6" />
-      <div className="h-12 w-full bg-muted rounded" />
+    <div className="space-y-6">
+      {gruposFuturos.map(([k, lista]) => {
+        const ehHoje = k === hojeKey;
+        return (
+          <div key={k}>
+            <div className="flex items-center gap-2 mb-2">
+              <p
+                className={`font-display text-sm uppercase tracking-wider ${
+                  ehHoje ? "text-cl-laranja" : "text-cl-verde-escuro"
+                }`}
+              >
+                {rotuloDia(lista[0].data_hora_inicio, hojeKey)}
+              </p>
+              {ehHoje && (
+                <span className="text-[10px] font-semibold uppercase tracking-wider bg-cl-laranja text-white rounded-full px-2 py-0.5">
+                  agora
+                </span>
+              )}
+            </div>
+            <div className="space-y-3">
+              {lista.map((j) => (
+                <CardJogoAberto key={j.id} jogo={j} />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
+      {passados.length > 0 && (
+        <div>
+          <button
+            type="button"
+            onClick={() => setVerPassados((v) => !v)}
+            className="w-full text-sm font-semibold text-cl-verde-escuro underline underline-offset-4 decoration-cl-laranja py-2"
+          >
+            {verPassados
+              ? "Esconder jogos passados"
+              : `Ver ${passados.length} ${passados.length === 1 ? "jogo passado" : "jogos passados"}`}
+          </button>
+          {verPassados && (
+            <div className="space-y-6 mt-3 opacity-90">
+              {Array.from(
+                passados.reduce((m, j) => {
+                  const k = chaveDia(j.data_hora_inicio);
+                  if (!m.has(k)) m.set(k, []);
+                  m.get(k)!.push(j);
+                  return m;
+                }, new Map<string, Jogo[]>()),
+              )
+                .reverse()
+                .map(([k, lista]) => (
+                  <div key={k}>
+                    <p className="font-display text-sm uppercase tracking-wider text-cl-cinza-texto mb-2">
+                      {rotuloDia(lista[0].data_hora_inicio, hojeKey)}
+                    </p>
+                    <div className="space-y-3">
+                      {lista.map((j) => (
+                        <CardJogoAberto key={j.id} jogo={j} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="font-display text-cl-verde-escuro text-base mb-3 flex items-center gap-3 uppercase tracking-wider">
+      <span className="block h-px flex-1 bg-cl-verde/25" aria-hidden />
+      <span>{children}</span>
+      <span className="block h-px flex-1 bg-cl-verde/25" aria-hidden />
+    </h2>
+  );
+}
+
+function SkeletonList() {
+  return (
+    <div className="space-y-3">
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className="h-32 rounded-2xl bg-card border border-border animate-pulse"
+        />
+      ))}
     </div>
   );
 }
