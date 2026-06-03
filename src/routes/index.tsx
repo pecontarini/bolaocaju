@@ -8,7 +8,6 @@ import {
   HeaderClassificacao,
   type LinhaClassificacao,
 } from "@/components/jogos/TabelaClassificacao";
-import { FaixaAzulejos } from "@/components/site/FaixaAzulejos";
 import type { Jogo } from "@/lib/jogos";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useJogosRealtime } from "@/hooks/useJogosRealtime";
