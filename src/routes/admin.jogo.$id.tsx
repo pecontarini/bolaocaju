@@ -11,6 +11,9 @@ import {
   Gift,
   AlertTriangle,
   Receipt,
+  Radio,
+  Plus,
+  Minus,
 } from "lucide-react";
 
 import { AdminShell, PageHeader } from "@/components/admin/AdminShell";
@@ -168,6 +171,8 @@ function DetalheJogoPage() {
     jogo.status === "ativo" ||
     jogo.status === "palpites_encerrados" ||
     jogo.status === "encerrado";
+  const podeNarrarAoVivo =
+    jogo.status === "ativo" || jogo.status === "palpites_encerrados";
   const placarLancado = jogo.placar_a !== null && jogo.placar_b !== null;
   const jaEncerrado = jogo.status === "encerrado";
   const podeApurar = placarLancado && !jaEncerrado;
@@ -244,6 +249,10 @@ function DetalheJogoPage() {
       <div className="space-y-5">
         {!jaEncerrado && (
           <AcaoPremio jogo={jogo} onDone={invalidarTudo} />
+        )}
+
+        {podeNarrarAoVivo && (
+          <PlacarAoVivo jogo={jogo} onChange={invalidarTudo} />
         )}
 
         {podeLancarPlacar && (
