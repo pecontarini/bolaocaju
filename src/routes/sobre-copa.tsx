@@ -12,6 +12,7 @@ import {
 } from "@/components/jogos/TabelaClassificacao";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import { useJogosRealtime } from "@/hooks/useJogosRealtime";
 
 export const Route = createFileRoute("/sobre-copa")({
   head: () => ({
@@ -36,6 +37,7 @@ const NOME_PAIS: Record<string, string> = {
 };
 
 function SobreCopa() {
+  useJogosRealtime();
   const grupos = useQuery({
     queryKey: ["sobre-copa", "grupos"],
     queryFn: async () => {

@@ -13,6 +13,7 @@ import { FaixaAzulejos } from "@/components/site/FaixaAzulejos";
 import { BannerCopa } from "@/components/site/BannerCopa";
 import type { Jogo } from "@/lib/jogos";
 import { useState } from "react";
+import { useJogosRealtime } from "@/hooks/useJogosRealtime";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -34,6 +35,7 @@ const COLUNAS =
   "id,numero_jogo,fase,grupo,data_hora_inicio,time_a,codigo_a,time_b,codigo_b,estadio,cidade,pais_sede,status,placar_a,placar_b,palpites_encerrados,premio_descricao,premio_imagem_url,envolve_brasil";
 
 function HomeCliente() {
+  useJogosRealtime();
   const abertos = useQuery({
     queryKey: ["jogos-abertos"],
     queryFn: async () => {

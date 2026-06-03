@@ -11,6 +11,9 @@ import {
   Gift,
   AlertTriangle,
   Receipt,
+  Radio,
+  Plus,
+  Minus,
 } from "lucide-react";
 
 import { AdminShell, PageHeader } from "@/components/admin/AdminShell";
@@ -168,6 +171,8 @@ function DetalheJogoPage() {
     jogo.status === "ativo" ||
     jogo.status === "palpites_encerrados" ||
     jogo.status === "encerrado";
+  const podeNarrarAoVivo =
+    jogo.status === "ativo" || jogo.status === "palpites_encerrados";
   const placarLancado = jogo.placar_a !== null && jogo.placar_b !== null;
   const jaEncerrado = jogo.status === "encerrado";
   const podeApurar = placarLancado && !jaEncerrado;
@@ -244,6 +249,10 @@ function DetalheJogoPage() {
       <div className="space-y-5">
         {!jaEncerrado && (
           <AcaoPremio jogo={jogo} onDone={invalidarTudo} />
+        )}
+
+        {podeNarrarAoVivo && (
+          <PlacarAoVivo jogo={jogo} onChange={invalidarTudo} />
         )}
 
         {podeLancarPlacar && (
@@ -469,6 +478,125 @@ function AcaoLancarPlacar({
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+/* ===== PLACAR AO VIVO (botões +1 / -1 por time) ===== */
+function PlacarAoVivo({
+  jogo,
+  onChange,
+}: {
+  jogo: Jogo;
+  onChange: () => void;
+}) {
+  const [savingA, setSavingA] = useState(false);
+  const [savingB, setSavingB] = useState(false);
+  const a = jogo.placar_a ?? 0;
+  const b = jogo.placar_b ?? 0;
+
+  async function ajustar(time: "a" | "b", delta: 1 | -1) {
+    const atual = time === "a" ? a : b;
+    const novo = Math.max(0, atual + delta);
+    if (novo === atual) return;
+    const setter = time === "a" ? setSavingA : setSavingB;
+    setter(true);
+    const { error } = await supabase
+      .from("jogos")
+      .update(time === "a" ? { placar_a: novo } : { placar_b: novo })
+      .eq("id", jogo.id);
+    setter(false);
+    if (error) {
+      toast.error("Não consegui atualizar o placar agora.");
+      return;
+    }
+    onChange();
+  }
+
+  return (
+    <section className="glass rounded-3xl p-5">
+      <Cabecalho
+        icon={<Radio className="size-5" />}
+        titulo="Placar ao vivo"
+        passo={3}
+      />
+      <p className="text-xs text-cl-cinza-texto -mt-1 mb-4 leading-snug">
+        Narre o jogo em tempo real. Cada toque vai pro celular dos clientes na
+        hora. <strong>Isso não encerra o jogo nem apura ganhadores.</strong>
+      </p>
+
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4">
+        <TimeAoVivo
+          nome={jogo.time_a}
+          codigo={jogo.codigo_a}
+          valor={a}
+          saving={savingA}
+          onMais={() => ajustar("a", 1)}
+          onMenos={() => ajustar("a", -1)}
+        />
+        <span className="font-display text-cl-cinza-texto text-2xl text-center">×</span>
+        <TimeAoVivo
+          nome={jogo.time_b}
+          codigo={jogo.codigo_b}
+          valor={b}
+          saving={savingB}
+          onMais={() => ajustar("b", 1)}
+          onMenos={() => ajustar("b", -1)}
+        />
+      </div>
+    </section>
+  );
+}
+
+function TimeAoVivo({
+  nome,
+  codigo,
+  valor,
+  saving,
+  onMais,
+  onMenos,
+}: {
+  nome: string;
+  codigo: string | null;
+  valor: number;
+  saving: boolean;
+  onMais: () => void;
+  onMenos: () => void;
+}) {
+  return (
+    <div className="text-center min-w-0">
+      <div className="flex justify-center mb-1">
+        <Bandeira codigo={codigo} tamanho={28} />
+      </div>
+      <p className="text-[11px] text-cl-cinza-texto truncate uppercase tracking-wide">
+        {nome}
+      </p>
+      <p className="font-display text-cl-verde-escuro text-5xl tabular-nums leading-none mt-2 mb-3">
+        {valor}
+      </p>
+      <div className="flex flex-col gap-2">
+        <Button
+          onClick={onMais}
+          disabled={saving}
+          className="h-14 bg-cl-verde hover:bg-cl-verde-escuro text-white font-display text-base shadow-[0_8px_22px_-12px_rgba(28,59,22,0.55)]"
+        >
+          {saving ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <>
+              <Plus className="size-4 mr-1" /> 1 Gol
+            </>
+          )}
+        </Button>
+        <Button
+          onClick={onMenos}
+          disabled={saving || valor === 0}
+          variant="outline"
+          className="h-9 border-cl-verde/40 text-cl-verde-escuro"
+        >
+          <Minus className="size-3 mr-1" /> Corrigir
+        </Button>
+      </div>
+    </div>
   );
 }
 
