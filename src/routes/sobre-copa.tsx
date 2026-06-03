@@ -113,6 +113,58 @@ function SobreCopa() {
 
       <FaixaAzulejos className="my-6 opacity-90" />
 
+      {/* O torneio */}
+      <section>
+        <SectionTitle>O torneio</SectionTitle>
+        <div className="rounded-2xl bg-white/90 backdrop-blur-sm border border-border p-5 space-y-4 text-sm text-cl-cinza-texto leading-relaxed">
+          <div>
+            <h3 className="font-display font-semibold text-cl-verde-escuro text-sm mb-1">
+              O que é
+            </h3>
+            <p>
+              A Copa do Mundo FIFA é o principal torneio de seleções masculinas,
+              disputado a cada quatro anos. A edição de 2026 é a primeira com 48
+              seleções e 104 partidas, e a primeira sediada por três países ao
+              mesmo tempo: Estados Unidos, Canadá e México.
+            </p>
+          </div>
+          <div>
+            <h3 className="font-display font-semibold text-cl-verde-escuro text-sm mb-1">
+              Formato
+            </h3>
+            <p>
+              São 12 grupos de 4 seleções. Avançam os dois primeiros de cada
+              grupo e os oito melhores terceiros colocados, formando uma fase
+              eliminatória de 32 times. A partir daí é mata-mata em jogo único,
+              até a final.
+            </p>
+          </div>
+          <div>
+            <h3 className="font-display font-semibold text-cl-verde-escuro text-sm mb-1">
+              Datas e sedes
+            </h3>
+            <p>
+              O torneio vai de 11 de junho a 19 de julho de 2026, com partidas
+              em 16 cidades dos três países. A abertura é na Cidade do México
+              e a final em Nova York / Nova Jersey. Os jogos das quartas de
+              final em diante acontecem nos Estados Unidos.
+            </p>
+          </div>
+          <div>
+            <h3 className="font-display font-semibold text-cl-verde-escuro text-sm mb-1">
+              História
+            </h3>
+            <p>
+              O Brasil é o maior campeão, com cinco títulos. A atual campeã é
+              a Argentina, vencedora em 2022. A primeira Copa, em 1930, foi
+              vencida pelo Uruguai, país-sede daquela edição.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <FaixaAzulejos className="my-6 opacity-90" />
+
       {/* Formato */}
       <section>
         <SectionTitle>Como funciona</SectionTitle>
