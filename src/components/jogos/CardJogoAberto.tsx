@@ -70,9 +70,7 @@ export function CardJogoAberto({ jogo }: { jogo: Jogo }) {
               Ao vivo
             </span>
           ) : (
-            <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wider text-cl-verde">
-              Aberto
-            </span>
+            <span className="badge-palpite">Palpite</span>
           )}
           <ChevronRight className="size-4 text-cl-cinza-texto" />
         </div>
