@@ -5,6 +5,11 @@ import { toast } from "sonner";
 import { LayoutCliente } from "@/components/site/LayoutCliente";
 import { FaixaAzulejos } from "@/components/site/FaixaAzulejos";
 import { Bandeira } from "@/components/jogos/Bandeira";
+import {
+  TabelaClassificacao,
+  HeaderClassificacao,
+  type LinhaClassificacao,
+} from "@/components/jogos/TabelaClassificacao";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -51,12 +56,26 @@ function SobreCopa() {
     },
   });
 
+  const classificacao = useQuery({
+    queryKey: ["sobre-copa", "classificacao"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("fn_classificacao");
+      if (error) throw error;
+      return (data ?? []) as LinhaClassificacao[];
+    },
+    refetchInterval: 60_000,
+  });
+
   useEffect(() => {
     if (grupos.error) toast.error("Não consegui carregar os grupos.");
   }, [grupos.error]);
   useEffect(() => {
     if (sedes.error) toast.error("Não consegui carregar as sedes.");
   }, [sedes.error]);
+  useEffect(() => {
+    if (classificacao.error)
+      toast.error("Não consegui carregar a classificação.");
+  }, [classificacao.error]);
 
   return (
     <LayoutCliente>
@@ -198,7 +217,11 @@ function SobreCopa() {
             ))}
           </div>
         ) : (
-          <GruposLista linhas={grupos.data ?? []} />
+          <GruposLista
+            linhas={grupos.data ?? []}
+            classificacao={classificacao.data ?? []}
+            carregandoClassificacao={classificacao.isLoading}
+          />
         )}
       </section>
 
@@ -254,7 +277,15 @@ function NumeroCard({ valor, label }: { valor: string; label: string }) {
   );
 }
 
-function GruposLista({ linhas }: { linhas: LinhaGrupo[] }) {
+function GruposLista({
+  linhas,
+  classificacao,
+  carregandoClassificacao,
+}: {
+  linhas: LinhaGrupo[];
+  classificacao: LinhaClassificacao[];
+  carregandoClassificacao: boolean;
+}) {
   const porGrupo = new Map<string, LinhaGrupo[]>();
   for (const l of linhas) {
     if (!porGrupo.has(l.grupo)) porGrupo.set(l.grupo, []);
@@ -263,6 +294,12 @@ function GruposLista({ linhas }: { linhas: LinhaGrupo[] }) {
   const ordenado = Array.from(porGrupo.entries()).sort(([a], [b]) =>
     a.localeCompare(b),
   );
+
+  const classPorGrupo = new Map<string, LinhaClassificacao[]>();
+  for (const c of classificacao) {
+    if (!classPorGrupo.has(c.grupo)) classPorGrupo.set(c.grupo, []);
+    classPorGrupo.get(c.grupo)!.push(c);
+  }
 
   if (ordenado.length === 0) {
     return (
@@ -311,6 +348,17 @@ function GruposLista({ linhas }: { linhas: LinhaGrupo[] }) {
               );
             })}
           </ul>
+          <div className="mt-4">
+            <HeaderClassificacao />
+            {carregandoClassificacao ? (
+              <Skeleton className="h-40 rounded-2xl" />
+            ) : (
+              <TabelaClassificacao
+                grupo={grupo}
+                linhas={classPorGrupo.get(grupo) ?? []}
+              />
+            )}
+          </div>
         </div>
       ))}
     </div>
