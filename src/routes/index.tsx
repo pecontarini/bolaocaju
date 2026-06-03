@@ -3,19 +3,15 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { LayoutCliente } from "@/components/site/LayoutCliente";
 import { CardJogoAberto } from "@/components/jogos/CardJogoAberto";
-import { ListaResultados } from "@/components/jogos/ListaJogos";
 import {
   TabelaClassificacao,
   HeaderClassificacao,
   type LinhaClassificacao,
 } from "@/components/jogos/TabelaClassificacao";
 import { FaixaAzulejos } from "@/components/site/FaixaAzulejos";
-import { BannerCopa } from "@/components/site/BannerCopa";
 import type { Jogo } from "@/lib/jogos";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useJogosRealtime } from "@/hooks/useJogosRealtime";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -36,13 +32,28 @@ const COLUNAS =
 
 function HomeCliente() {
   useJogosRealtime();
-  const abertos = useQuery({
-    queryKey: ["jogos-abertos"],
+
+  const grupos = useQuery({
+    queryKey: ["home", "grupos"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("fn_grupos");
+      if (error) throw error;
+      const lista = (data ?? [])
+        .map((r: { grupo?: string } | string) =>
+          typeof r === "string" ? r : (r.grupo ?? ""),
+        )
+        .filter(Boolean) as string[];
+      return Array.from(new Set(lista)).sort();
+    },
+  });
+
+  const jogosGrupos = useQuery({
+    queryKey: ["home", "jogos-fase-grupos"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("jogos")
         .select(COLUNAS)
-        .eq("status", "ativo")
+        .eq("fase", "fase_grupos")
         .order("data_hora_inicio", { ascending: true });
       if (error) throw error;
       return (data ?? []) as Jogo[];
@@ -60,239 +71,244 @@ function HomeCliente() {
     refetchInterval: 60_000,
   });
 
-  const resultados = useQuery({
-    queryKey: ["ultimos-resultados"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("jogos")
-        .select(COLUNAS)
-        .eq("status", "encerrado")
-        .order("data_hora_inicio", { ascending: false })
-        .limit(5);
-      if (error) throw error;
-      return (data ?? []) as Jogo[];
-    },
-  });
+  const listaGrupos = grupos.data ?? [];
 
-  const proximoGeral = useQuery({
-    queryKey: ["proximo-jogo-banner"],
-    queryFn: async () => {
-      const agora = new Date().toISOString();
-      const { data, error } = await supabase
-        .from("jogos")
-        .select(COLUNAS)
-        .neq("status", "encerrado")
-        .gte("data_hora_inicio", agora)
-        .order("data_hora_inicio", { ascending: true })
-        .limit(1)
-        .maybeSingle();
-      if (error) throw error;
-      return (data ?? null) as Jogo | null;
-    },
-    refetchInterval: 60_000,
-  });
+  const jogosPorGrupo = useMemo(() => {
+    const m = new Map<string, Jogo[]>();
+    for (const j of jogosGrupos.data ?? []) {
+      if (!j.grupo) continue;
+      if (!m.has(j.grupo)) m.set(j.grupo, []);
+      m.get(j.grupo)!.push(j);
+    }
+    return m;
+  }, [jogosGrupos.data]);
 
-  const totalEncerrados = useQuery({
-    queryKey: ["total-encerrados"],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from("jogos")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "encerrado");
-      if (error) throw error;
-      return count ?? 0;
-    },
-    refetchInterval: 60_000,
-  });
+  const classPorGrupo = useMemo(() => {
+    const m = new Map<string, LinhaClassificacao[]>();
+    for (const c of classificacao.data ?? []) {
+      if (!m.has(c.grupo)) m.set(c.grupo, []);
+      m.get(c.grupo)!.push(c);
+    }
+    return m;
+  }, [classificacao.data]);
+
+  const grupoInicial = useMemo(() => {
+    if (!listaGrupos.length) return null;
+    const agora = Date.now();
+    const prox = (jogosGrupos.data ?? [])
+      .filter(
+        (j) =>
+          j.grupo &&
+          listaGrupos.includes(j.grupo) &&
+          new Date(j.data_hora_inicio).getTime() >= agora,
+      )
+      .sort(
+        (a, b) =>
+          new Date(a.data_hora_inicio).getTime() -
+          new Date(b.data_hora_inicio).getTime(),
+      )[0];
+    return prox?.grupo ?? listaGrupos[0];
+  }, [listaGrupos, jogosGrupos.data]);
+
+  const [grupoAtivo, setGrupoAtivo] = useState<string | null>(null);
+  const inicializou = useRef(false);
+  useEffect(() => {
+    if (!inicializou.current && grupoInicial) {
+      setGrupoAtivo(grupoInicial);
+      inicializou.current = true;
+    }
+  }, [grupoInicial]);
+
+  const swiperRef = useRef<HTMLDivElement | null>(null);
+  const slideRefs = useRef<Map<string, HTMLElement | null>>(new Map());
+  const chipRefs = useRef<Map<string, HTMLButtonElement | null>>(new Map());
+  const scrollProgrammatic = useRef(false);
+
+  function irPara(g: string) {
+    setGrupoAtivo(g);
+    const el = slideRefs.current.get(g);
+    if (el && swiperRef.current) {
+      scrollProgrammatic.current = true;
+      swiperRef.current.scrollTo({ left: el.offsetLeft, behavior: "smooth" });
+      window.setTimeout(() => {
+        scrollProgrammatic.current = false;
+      }, 600);
+    }
+    chipRefs.current
+      .get(g)
+      ?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }
+
+  // posiciona no slide inicial (sem animar) quando os refs estiverem prontos
+  useEffect(() => {
+    if (!grupoAtivo || !swiperRef.current) return;
+    const el = slideRefs.current.get(grupoAtivo);
+    if (!el) return;
+    if (Math.abs(swiperRef.current.scrollLeft - el.offsetLeft) < 4) return;
+    scrollProgrammatic.current = true;
+    swiperRef.current.scrollLeft = el.offsetLeft;
+    window.setTimeout(() => {
+      scrollProgrammatic.current = false;
+    }, 80);
+    // só posiciona uma vez quando muda a lista; clicks usam irPara()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listaGrupos.length]);
+
+  // sincroniza chip ao arrastar
+  useEffect(() => {
+    const root = swiperRef.current;
+    if (!root || !listaGrupos.length) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (scrollProgrammatic.current) return;
+        const visivel = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visivel) {
+          const g = (visivel.target as HTMLElement).dataset.grupo;
+          if (g && g !== grupoAtivo) {
+            setGrupoAtivo(g);
+            chipRefs.current
+              .get(g)
+              ?.scrollIntoView({
+                behavior: "smooth",
+                inline: "center",
+                block: "nearest",
+              });
+          }
+        }
+      },
+      { root, threshold: [0.55, 0.75] },
+    );
+    slideRefs.current.forEach((el) => el && obs.observe(el));
+    return () => obs.disconnect();
+  }, [listaGrupos, grupoAtivo]);
+
+  const carregando =
+    grupos.isLoading || jogosGrupos.isLoading || classificacao.isLoading;
 
   return (
     <LayoutCliente>
-      <h1 className="sr-only">Bolão Caju Limão</h1>
+      <h1 className="sr-only">Bolão Caju Limão — Grupos da Copa</h1>
 
-      {/* Banner Copa */}
-      <div className="mb-5">
-        <BannerCopa
-          proximo={proximoGeral.data ?? null}
-          encerrados={totalEncerrados.data ?? 0}
-        />
-      </div>
-
-      {/* Saudação enxuta */}
-      <div className="mb-4">
+      <div className="mb-3">
         <p className="font-display text-cl-verde-escuro text-2xl leading-tight">
-          Boa, fera!
+          Grupos da Copa
         </p>
         <p className="text-sm text-cl-cinza-texto">
-          Escolha um jogo aberto e mande seu palpite.
+          Toque num grupo ou arraste pro lado.
         </p>
       </div>
 
-      {/* Jogos abertos */}
-      {abertos.isLoading ? (
+      {/* Chips de grupos */}
+      <div className="-mx-4 px-4 mb-4 overflow-x-auto no-scrollbar">
+        <div className="flex gap-2 w-max pr-4">
+          {grupos.isLoading
+            ? Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-10 w-12 rounded-full bg-muted animate-pulse"
+                />
+              ))
+            : listaGrupos.map((g) => {
+                const ativo = g === grupoAtivo;
+                return (
+                  <button
+                    key={g}
+                    type="button"
+                    ref={(el) => {
+                      chipRefs.current.set(g, el);
+                    }}
+                    onClick={() => irPara(g)}
+                    aria-pressed={ativo}
+                    className={`min-w-[3rem] h-10 px-4 rounded-full font-display text-base tracking-wider transition-colors border ${
+                      ativo
+                        ? "bg-cl-verde-escuro text-white border-cl-verde-escuro shadow-[0_6px_18px_-10px_rgba(28,59,22,0.7)]"
+                        : "bg-white text-cl-verde-escuro border-border hover:bg-cl-verde-claro"
+                    }`}
+                  >
+                    {g}
+                  </button>
+                );
+              })}
+        </div>
+      </div>
+
+      <FaixaAzulejos className="mb-4 opacity-90" />
+
+      {carregando ? (
         <SkeletonCard />
-      ) : !abertos.data || abertos.data.length === 0 ? (
-        <SemJogoAberto />
+      ) : listaGrupos.length === 0 ? (
+        <SemGrupos />
       ) : (
-        <JogosAbertos
-          jogos={abertos.data}
-          classificacao={classificacao.data ?? []}
-        />
+        <div
+          ref={swiperRef}
+          className="-mx-4 flex overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth touch-pan-x"
+          style={{ scrollbarWidth: "none" }}
+        >
+          {listaGrupos.map((g) => (
+            <section
+              key={g}
+              data-grupo={g}
+              ref={(el) => {
+                slideRefs.current.set(g, el);
+              }}
+              className="snap-center shrink-0 w-full px-4"
+            >
+              <SlideGrupo
+                grupo={g}
+                linhas={classPorGrupo.get(g) ?? []}
+                jogos={jogosPorGrupo.get(g) ?? []}
+              />
+            </section>
+          ))}
+        </div>
       )}
-
-      <FaixaAzulejos className="my-6 opacity-90" />
-
-      {/* Últimos resultados */}
-      <section>
-        <SectionTitle>Últimos resultados</SectionTitle>
-        {resultados.isLoading ? (
-          <SkeletonList />
-        ) : (
-          <ListaResultados jogos={resultados.data ?? []} />
-        )}
-      </section>
     </LayoutCliente>
   );
 }
 
-function ehHojeBrasilia(iso: string): boolean {
-  const fmt = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Sao_Paulo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-  return fmt.format(new Date(iso)) === fmt.format(new Date());
-}
-
-function chaveDia(iso: string): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Sao_Paulo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date(iso));
-}
-
-function rotuloDia(iso: string): string {
-  return format(new Date(iso), "EEEE, dd 'de' MMM", { locale: ptBR })
-    .replace(/^./, (c) => c.toUpperCase());
-}
-
-const DIAS_INICIAIS = 3;
-
-function JogosAbertos({
+function SlideGrupo({
+  grupo,
+  linhas,
   jogos,
-  classificacao,
 }: {
+  grupo: string;
+  linhas: LinhaClassificacao[];
   jogos: Jogo[];
-  classificacao: LinhaClassificacao[];
 }) {
-  const hoje = jogos.filter((j) => ehHojeBrasilia(j.data_hora_inicio));
-  const futuros = jogos.filter((j) => !ehHojeBrasilia(j.data_hora_inicio));
-
-  // agrupa futuros por dia
-  const grupos = new Map<string, Jogo[]>();
-  for (const j of futuros) {
-    const k = chaveDia(j.data_hora_inicio);
-    if (!grupos.has(k)) grupos.set(k, []);
-    grupos.get(k)!.push(j);
-  }
-  const dias = Array.from(grupos.entries());
-
-  const [verTodos, setVerTodos] = useState(false);
-  const diasVisiveis = verTodos ? dias : dias.slice(0, DIAS_INICIAIS);
-  const restantes = dias.length - diasVisiveis.length;
-
-  const classPorGrupo = new Map<string, LinhaClassificacao[]>();
-  for (const c of classificacao) {
-    if (!classPorGrupo.has(c.grupo)) classPorGrupo.set(c.grupo, []);
-    classPorGrupo.get(c.grupo)!.push(c);
-  }
-
-  const renderJogo = (j: Jogo) => {
-    const linhas = j.grupo ? classPorGrupo.get(j.grupo) : undefined;
-    return (
-      <div key={j.id} className="space-y-2">
-        <CardJogoAberto jogo={j} />
-        {j.grupo && linhas && linhas.length > 0 && (
-          <div className="px-1">
-            <HeaderClassificacao titulo={`Classificação do Grupo ${j.grupo}`} />
-            <TabelaClassificacao grupo={j.grupo} linhas={linhas} />
+  return (
+    <div className="space-y-5">
+      <div>
+        <HeaderClassificacao titulo={`Classificação do Grupo ${grupo}`} />
+        <TabelaClassificacao grupo={grupo} linhas={linhas} />
+      </div>
+      <div>
+        <HeaderClassificacao titulo={`Jogos do Grupo ${grupo}`} />
+        {jogos.length === 0 ? (
+          <p className="text-sm text-cl-cinza-texto px-1">
+            Nenhum jogo cadastrado para este grupo.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {jogos.map((j) => (
+              <CardJogoAberto key={j.id} jogo={j} />
+            ))}
           </div>
         )}
       </div>
-    );
-  };
-
-  return (
-    <div className="space-y-6">
-      {hoje.length > 0 && (
-        <section>
-          <SectionTitle>Hoje</SectionTitle>
-          <div className="space-y-3">
-            {hoje.map(renderJogo)}
-          </div>
-        </section>
-      )}
-
-      {dias.length > 0 && (
-        <section>
-          <SectionTitle>Próximos dias</SectionTitle>
-          <div className="space-y-5">
-            {diasVisiveis.map(([k, lista]) => (
-              <div key={k}>
-                <p className="font-display text-cl-verde-escuro text-sm mb-2">
-                  {rotuloDia(lista[0].data_hora_inicio)}
-                </p>
-                <div className="space-y-3">
-                  {lista.map(renderJogo)}
-                </div>
-              </div>
-            ))}
-          </div>
-          {restantes > 0 && (
-            <div className="mt-4 text-center">
-              <button
-                type="button"
-                onClick={() => setVerTodos(true)}
-                className="text-sm font-semibold text-cl-verde-escuro underline underline-offset-4 decoration-cl-laranja"
-              >
-                Ver mais {restantes} {restantes === 1 ? "dia" : "dias"}
-              </button>
-            </div>
-          )}
-        </section>
-      )}
     </div>
   );
 }
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="font-display text-cl-verde-escuro text-base mb-3 flex items-center gap-3 uppercase tracking-wider">
-      <span className="block h-px flex-1 bg-cl-verde/25" aria-hidden />
-      <span>{children}</span>
-      <span className="block h-px flex-1 bg-cl-verde/25" aria-hidden />
-    </h2>
-  );
-}
-
-function SemJogoAberto() {
+function SemGrupos() {
   return (
     <section className="rounded-2xl bg-card border-2 border-dashed border-cl-verde/40 p-6 text-center">
-      <img
-        src="/assets/00-simbolo-copo-isolado.png"
-        alt=""
-        className="size-20 mx-auto opacity-80"
-        onError={(e) => {
-          (e.currentTarget as HTMLImageElement).style.display = "none";
-        }}
-      />
-      <p className="font-display text-cl-verde-escuro text-xl mt-3">
-        Nenhum jogo aberto agora
+      <p className="font-display text-cl-verde-escuro text-xl">
+        Nenhum grupo disponível
       </p>
       <p className="text-sm text-cl-cinza-texto mt-1">
-        Quando o próximo jogo abrir, ele aparece aqui na hora.
+        Os grupos da Copa aparecem aqui assim que forem cadastrados.
       </p>
     </section>
   );
@@ -305,19 +321,6 @@ function SkeletonCard() {
       <div className="h-6 w-3/4 bg-muted rounded mb-2" />
       <div className="h-4 w-1/2 bg-muted rounded mb-6" />
       <div className="h-12 w-full bg-muted rounded" />
-    </div>
-  );
-}
-
-function SkeletonList() {
-  return (
-    <div className="space-y-2">
-      {[0, 1, 2].map((i) => (
-        <div
-          key={i}
-          className="h-12 rounded-xl bg-card border border-border animate-pulse"
-        />
-      ))}
     </div>
   );
 }
