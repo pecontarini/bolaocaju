@@ -1058,3 +1058,66 @@ function traduzirErro(msg: string, fallback: string) {
   if (m.includes("network") || m.includes("fetch")) return "Sem conexão agora.";
   return fallback;
 }
+
+/* ===== INVESTIMENTO ===== */
+type InvestimentoRow = {
+  comandas_ganhadoras: number | null;
+  itens: number | null;
+  investimento: number | string | null;
+};
+
+function CardInvestimento({ jogoId }: { jogoId: string }) {
+  const q = useQuery({
+    queryKey: ["admin", "investimento", jogoId],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("fn_investimento_jogo", {
+        p_jogo_id: jogoId,
+      });
+      if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      return (row ?? null) as InvestimentoRow | null;
+    },
+  });
+
+  return (
+    <section className="glass rounded-3xl p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <Package className="size-5 text-cl-verde-escuro" />
+        <h2 className="font-display text-cl-verde-escuro text-lg">
+          Investimento do jogo
+        </h2>
+      </div>
+      {q.isLoading ? (
+        <div className="py-4 text-center text-cl-cinza-texto">
+          <Loader2 className="size-5 mx-auto animate-spin" />
+        </div>
+      ) : q.isError || !q.data ? (
+        <p className="text-sm text-cl-cinza-texto">
+          Investimento indisponível no momento.
+        </p>
+      ) : (
+        <div className="grid grid-cols-3 gap-2">
+          <BoxNum label="Comandas" valor={String(q.data.comandas_ganhadoras ?? 0)} />
+          <BoxNum label="Itens" valor={String(q.data.itens ?? 0)} />
+          <BoxNum
+            label="Investido"
+            valor={formatarReais(Number(q.data.investimento ?? 0))}
+          />
+        </div>
+      )}
+    </section>
+  );
+}
+
+function BoxNum({ label, valor }: { label: string; valor: string }) {
+  return (
+    <div className="rounded-xl bg-white/70 border border-cl-verde/15 px-2 py-3 text-center">
+      <p className="text-[10px] uppercase tracking-wider text-cl-cinza-texto">
+        {label}
+      </p>
+      <p className="font-display text-cl-verde-escuro text-xl tabular-nums leading-none mt-1">
+        {valor}
+      </p>
+    </div>
+  );
+}
