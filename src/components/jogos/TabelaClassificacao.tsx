@@ -23,7 +23,7 @@ type Props = {
 export function TabelaClassificacao({ grupo, linhas, className = "" }: Props) {
   return (
     <div
-      className={`rounded-[10px] overflow-hidden border border-border bg-white ${className}`}
+      className={`rounded-2xl overflow-hidden glass-data ${className}`}
     >
       <div className="px-3 py-1.5 bg-cl-verde-escuro flex items-center gap-2">
         <span
@@ -36,7 +36,7 @@ export function TabelaClassificacao({ grupo, linhas, className = "" }: Props) {
       </div>
       <table className="w-full text-[13px] num">
         <thead>
-          <tr className="bg-white text-cl-cinza-texto text-[10px] uppercase tracking-wider border-b border-border">
+          <tr className="bg-white/60 text-cl-cinza-texto text-[10px] uppercase tracking-wider border-b border-border">
             <th className="px-2 h-7 text-left font-medium w-6">#</th>
             <th className="px-1 h-7 text-left font-medium">Seleção</th>
             <th className="px-1.5 h-7 text-center font-medium w-7">J</th>
@@ -55,8 +55,8 @@ export function TabelaClassificacao({ grupo, linhas, className = "" }: Props) {
             const bg = isBrasil
               ? "bg-cl-laranja/25"
               : zebra
-                ? "bg-cl-cinza-bg/60"
-                : "bg-white";
+                ? "bg-white/40"
+                : "bg-transparent";
             return (
               <tr
                 key={l.codigo}
@@ -124,14 +124,12 @@ export function HeaderClassificacao({ titulo = "Classificação" }: { titulo?: s
       <img
         src="/assets/08-selo-circular-verde.png"
         alt=""
-        className="h-5 w-5"
+        className="h-6 w-6"
         onError={(e) => {
           (e.currentTarget as HTMLImageElement).style.display = "none";
         }}
       />
-      <p className="font-display text-cl-verde-escuro text-[18px] leading-none">
-        {titulo}
-      </p>
+      <p className="secao-titulo">{titulo}</p>
     </div>
   );
 }

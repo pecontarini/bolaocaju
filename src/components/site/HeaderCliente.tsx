@@ -19,7 +19,7 @@ const navItens = [
 export function HeaderCliente() {
   const [open, setOpen] = useState(false);
   return (
-    <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-border">
+    <header className="sticky top-0 z-30 glass-sticky">
       <div className="mx-auto max-w-[480px] flex items-center justify-between px-4 h-13" style={{ height: 52 }}>
         <Link to="/" className="flex items-center gap-2">
           <img

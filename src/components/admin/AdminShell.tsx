@@ -55,7 +55,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
 function FundoAreia({ children }: { children: ReactNode }) {
   return (
-    <div className="relative min-h-screen bg-cl-cinza-bg overflow-x-hidden">
+    <div className="relative min-h-screen overflow-x-hidden">
       {/* blobs decorativos */}
       <div
         aria-hidden
@@ -66,15 +66,6 @@ function FundoAreia({ children }: { children: ReactNode }) {
         aria-hidden
         className="pointer-events-none absolute top-1/3 -right-32 size-[360px] rounded-full opacity-25 blur-3xl"
         style={{ background: "var(--cl-laranja)" }}
-      />
-      <div
-        aria-hidden
-        className="absolute inset-0 opacity-[0.05] pointer-events-none"
-        style={{
-          backgroundImage: "url('/assets/16-textura-geometrica.png')",
-          backgroundRepeat: "repeat",
-          backgroundSize: "320px",
-        }}
       />
       <div className="relative">{children}</div>
     </div>
@@ -108,7 +99,7 @@ function TopbarMobile({ email }: { email: string }) {
   const [open, setOpen] = useState(false);
   return (
     <header className="md:hidden sticky top-0 z-30 p-3">
-      <div className="glass rounded-2xl flex items-center justify-between px-3 py-2">
+      <div className="glass-sticky rounded-2xl flex items-center justify-between px-3 py-2">
         <Link to="/admin" className="flex items-center">
           <img
             src="/assets/01-logo-horizontal-verde.png"
@@ -217,9 +208,7 @@ export function PageHeader({
   return (
     <div className="flex items-start justify-between gap-3 mb-5 flex-wrap">
       <div className="min-w-0">
-        <h1 className="font-display text-cl-verde-escuro text-2xl sm:text-3xl leading-tight">
-          {titulo}
-        </h1>
+        <h1 className="tela-titulo">{titulo}</h1>
         {subtitulo && (
           <p className="text-[13px] sm:text-sm text-cl-cinza-texto mt-1">
             {subtitulo}
