@@ -13,6 +13,7 @@ export type Jogo = {
   numero_jogo: number;
   fase: string | null;
   grupo: string | null;
+  rodada: number | null;
   data_hora_inicio: string;
   time_a: string;
   codigo_a: string | null;
