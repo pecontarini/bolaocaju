@@ -284,6 +284,8 @@ function DetalheJogoPage() {
 
         {mostrarGanhadores && <CardGanhadores jogo={jogo} />}
 
+        {(placarLancado || jaEncerrado) && <CardInvestimento jogoId={jogo.id} />}
+
         <ListaPalpitesAdmin jogoId={id} />
       </div>
     </>
