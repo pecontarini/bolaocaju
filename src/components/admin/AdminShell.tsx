@@ -55,7 +55,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
 function FundoAreia({ children }: { children: ReactNode }) {
   return (
-    <div className="relative min-h-screen bg-cl-cinza-bg overflow-x-hidden">
+    <div className="relative min-h-screen overflow-x-hidden">
       {/* blobs decorativos */}
       <div
         aria-hidden
@@ -66,15 +66,6 @@ function FundoAreia({ children }: { children: ReactNode }) {
         aria-hidden
         className="pointer-events-none absolute top-1/3 -right-32 size-[360px] rounded-full opacity-25 blur-3xl"
         style={{ background: "var(--cl-laranja)" }}
-      />
-      <div
-        aria-hidden
-        className="absolute inset-0 opacity-[0.05] pointer-events-none"
-        style={{
-          backgroundImage: "url('/assets/16-textura-geometrica.png')",
-          backgroundRepeat: "repeat",
-          backgroundSize: "320px",
-        }}
       />
       <div className="relative">{children}</div>
     </div>
