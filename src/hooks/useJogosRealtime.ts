@@ -31,6 +31,10 @@ export function useJogosRealtime() {
       qc.invalidateQueries({ queryKey: ["sobre-copa", "classificacao"] });
       qc.invalidateQueries({ queryKey: ["jogo-palpite"] });
       qc.invalidateQueries({ queryKey: ["admin", "jogo"] });
+      // Home reestruturada em abas usa esse prefixo.
+      qc.invalidateQueries({
+        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0] === "home",
+      });
     }
 
     const ch = supabase
