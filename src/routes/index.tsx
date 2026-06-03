@@ -4,6 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { LayoutCliente } from "@/components/site/LayoutCliente";
 import { CardJogoAberto } from "@/components/jogos/CardJogoAberto";
 import { ListaResultados } from "@/components/jogos/ListaJogos";
+import {
+  TabelaClassificacao,
+  HeaderClassificacao,
+  type LinhaClassificacao,
+} from "@/components/jogos/TabelaClassificacao";
 import { FaixaAzulejos } from "@/components/site/FaixaAzulejos";
 import { BannerCopa } from "@/components/site/BannerCopa";
 import type { Jogo } from "@/lib/jogos";
@@ -41,6 +46,16 @@ function HomeCliente() {
       return (data ?? []) as Jogo[];
     },
     refetchInterval: 30_000,
+  });
+
+  const classificacao = useQuery({
+    queryKey: ["classificacao-home"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("fn_classificacao");
+      if (error) throw error;
+      return (data ?? []) as LinhaClassificacao[];
+    },
+    refetchInterval: 60_000,
   });
 
   const resultados = useQuery({
@@ -116,7 +131,10 @@ function HomeCliente() {
       ) : !abertos.data || abertos.data.length === 0 ? (
         <SemJogoAberto />
       ) : (
-        <JogosAbertos jogos={abertos.data} />
+        <JogosAbertos
+          jogos={abertos.data}
+          classificacao={classificacao.data ?? []}
+        />
       )}
 
       <FaixaAzulejos className="my-6 opacity-90" />
@@ -160,7 +178,13 @@ function rotuloDia(iso: string): string {
 
 const DIAS_INICIAIS = 3;
 
-function JogosAbertos({ jogos }: { jogos: Jogo[] }) {
+function JogosAbertos({
+  jogos,
+  classificacao,
+}: {
+  jogos: Jogo[];
+  classificacao: LinhaClassificacao[];
+}) {
   const hoje = jogos.filter((j) => ehHojeBrasilia(j.data_hora_inicio));
   const futuros = jogos.filter((j) => !ehHojeBrasilia(j.data_hora_inicio));
 
@@ -177,15 +201,34 @@ function JogosAbertos({ jogos }: { jogos: Jogo[] }) {
   const diasVisiveis = verTodos ? dias : dias.slice(0, DIAS_INICIAIS);
   const restantes = dias.length - diasVisiveis.length;
 
+  const classPorGrupo = new Map<string, LinhaClassificacao[]>();
+  for (const c of classificacao) {
+    if (!classPorGrupo.has(c.grupo)) classPorGrupo.set(c.grupo, []);
+    classPorGrupo.get(c.grupo)!.push(c);
+  }
+
+  const renderJogo = (j: Jogo) => {
+    const linhas = j.grupo ? classPorGrupo.get(j.grupo) : undefined;
+    return (
+      <div key={j.id} className="space-y-2">
+        <CardJogoAberto jogo={j} />
+        {j.grupo && linhas && linhas.length > 0 && (
+          <div className="px-1">
+            <HeaderClassificacao titulo={`Classificação do Grupo ${j.grupo}`} />
+            <TabelaClassificacao grupo={j.grupo} linhas={linhas} />
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {hoje.length > 0 && (
         <section>
           <SectionTitle>Hoje</SectionTitle>
           <div className="space-y-3">
-            {hoje.map((j) => (
-              <CardJogoAberto key={j.id} jogo={j} />
-            ))}
+            {hoje.map(renderJogo)}
           </div>
         </section>
       )}
@@ -200,9 +243,7 @@ function JogosAbertos({ jogos }: { jogos: Jogo[] }) {
                   {rotuloDia(lista[0].data_hora_inicio)}
                 </p>
                 <div className="space-y-3">
-                  {lista.map((j) => (
-                    <CardJogoAberto key={j.id} jogo={j} />
-                  ))}
+                  {lista.map(renderJogo)}
                 </div>
               </div>
             ))}
