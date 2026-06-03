@@ -128,9 +128,7 @@ function JogosDeHoje() {
 
   return (
     <section>
-      <h2 className="font-display text-cl-verde-escuro text-xl mb-2">
-        Jogos de hoje
-      </h2>
+      <h2 className="secao-titulo mb-3">Jogos de hoje</h2>
       {q.isLoading ? (
         <div className="glass rounded-2xl h-24 animate-pulse" />
       ) : !q.data || q.data.length === 0 ? (
@@ -161,9 +159,7 @@ function JogosAbertosAgora() {
 
   return (
     <section>
-      <h2 className="font-display text-cl-verde-escuro text-xl mb-2">
-        Jogos abertos agora
-      </h2>
+      <h2 className="secao-titulo mb-3">Jogos abertos agora</h2>
       {q.isLoading ? (
         <div className="glass rounded-2xl h-20 animate-pulse" />
       ) : !q.data || q.data.length === 0 ? (
