@@ -14,6 +14,7 @@ import {
   Radio,
   Plus,
   Minus,
+  Package,
 } from "lucide-react";
 
 import { AdminShell, PageHeader } from "@/components/admin/AdminShell";
@@ -33,6 +34,14 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminSession } from "@/lib/admin/auth";
 import type { Jogo } from "@/lib/jogos";
+import { formatarReais } from "@/lib/formato";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   formatarDataHoraBR,
   rotuloFase,
@@ -42,7 +51,7 @@ import {
 } from "@/lib/admin/jogo-helpers";
 
 const COLUNAS =
-  "id,numero_jogo,fase,grupo,data_hora_inicio,time_a,codigo_a,time_b,codigo_b,estadio,cidade,pais_sede,status,placar_a,placar_b,palpites_encerrados,premio_descricao,premio_imagem_url,envolve_brasil";
+  "id,numero_jogo,fase,grupo,data_hora_inicio,time_a,codigo_a,time_b,codigo_b,estadio,cidade,pais_sede,status,placar_a,placar_b,palpites_encerrados,premio_descricao,premio_imagem_url,envolve_brasil,premio_produto_id,premio_quantidade";
 
 export const Route = createFileRoute("/admin/jogo/$id")({
   component: () => (
