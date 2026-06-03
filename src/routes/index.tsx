@@ -617,37 +617,72 @@ function PartidasPorTime({
   time: string;
   onTime: (s: string) => void;
 }) {
-  const times = useMemo(() => {
-    const s = new Map<string, { codigo: string | null; nome: string }>();
-    for (const j of jogos) {
-      if (!s.has(j.time_a)) s.set(j.time_a, { codigo: j.codigo_a, nome: j.time_a });
-      if (!s.has(j.time_b)) s.set(j.time_b, { codigo: j.codigo_b, nome: j.time_b });
-    }
-    return Array.from(s.values()).sort((a, b) => a.nome.localeCompare(b.nome));
-  }, [jogos]);
+  const selecoes = useQuery({
+    queryKey: ["home", "selecoes-reais"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("fn_grupos");
+      if (error) throw error;
+      const map = new Map<string, { nome: string; codigo: string | null }>();
+      for (const r of (data ?? []) as Array<{
+        selecao?: string;
+        codigo?: string | null;
+      }>) {
+        const nome = r.selecao;
+        if (!nome) continue;
+        if (!map.has(nome)) map.set(nome, { nome, codigo: r.codigo ?? null });
+      }
+      return Array.from(map.values()).sort((a, b) =>
+        a.nome.localeCompare(b.nome, "pt-BR"),
+      );
+    },
+  });
 
   const filtrados = useMemo(
     () =>
       time
-        ? jogos.filter((j) => j.time_a === time || j.time_b === time)
+        ? jogos
+            .filter(
+              (j) =>
+                j.fase === "fase_grupos" &&
+                (j.time_a === time || j.time_b === time),
+            )
+            .sort(
+              (a, b) =>
+                new Date(a.data_hora_inicio).getTime() -
+                new Date(b.data_hora_inicio).getTime(),
+            )
         : [],
     [jogos, time],
   );
 
+  const timeSel = selecoes.data?.find((t) => t.nome === time);
+
   return (
     <div className="space-y-4">
-      <select
-        value={time}
-        onChange={(e) => onTime(e.target.value)}
-        className="w-full rounded-2xl border border-cl-verde/15 bg-white px-4 py-3 text-sm font-semibold text-cl-verde-escuro"
-      >
-        <option value="">Selecione uma seleção…</option>
-        {times.map((t) => (
-          <option key={t.nome} value={t.nome}>
-            {t.nome}
-          </option>
-        ))}
-      </select>
+      <div className="relative">
+        <select
+          value={time}
+          onChange={(e) => onTime(e.target.value)}
+          className="w-full appearance-none rounded-2xl border border-cl-verde/15 bg-white px-4 py-3 pr-10 text-sm font-semibold text-cl-verde-escuro"
+        >
+          <option value="">Selecione uma seleção…</option>
+          {(selecoes.data ?? []).map((t) => (
+            <option key={t.nome} value={t.nome}>
+              {t.nome}
+            </option>
+          ))}
+        </select>
+        <ChevronRight className="size-4 absolute right-3 top-1/2 -translate-y-1/2 rotate-90 text-cl-cinza-texto pointer-events-none" />
+      </div>
+
+      {timeSel && (
+        <div className="flex items-center gap-2 px-1">
+          <Bandeira codigo={timeSel.codigo} tamanho={20} />
+          <p className="font-display text-lg text-cl-verde-escuro">
+            {timeSel.nome}
+          </p>
+        </div>
+      )}
 
       {time && filtrados.length === 0 && (
         <EstadoVazio mensagem="Sem jogos para este time." />
