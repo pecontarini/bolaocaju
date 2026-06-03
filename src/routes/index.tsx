@@ -9,7 +9,7 @@ import {
   type LinhaClassificacao,
 } from "@/components/jogos/TabelaClassificacao";
 import type { Jogo } from "@/lib/jogos";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useJogosRealtime } from "@/hooks/useJogosRealtime";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
