@@ -1,10 +1,10 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 
 import { AdminShell, PageHeader } from "@/components/admin/AdminShell";
-import { Bandeira } from "@/components/jogos/Bandeira";
+import { CardJogoAdmin } from "@/components/admin/CardJogoAdmin";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,11 +17,9 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import type { Jogo, StatusJogo } from "@/lib/jogos";
 import {
-  formatarDataHoraBR,
   inicioFimDeHojeBrasilia,
   rotuloFase,
   STATUS_LABEL,
-  statusBadgeClass,
 } from "@/lib/admin/jogo-helpers";
 
 export const Route = createFileRoute("/admin/jogos")({
@@ -59,6 +57,21 @@ function ListaJogosPage() {
     return Array.from(s);
   }, [q.data]);
 
+  const palpitesQ = useQuery({
+    queryKey: ["admin", "jogos-palpites-count"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("palpites")
+        .select("jogo_id");
+      if (error) throw error;
+      const map: Record<string, number> = {};
+      (data ?? []).forEach((r: { jogo_id: string }) => {
+        map[r.jogo_id] = (map[r.jogo_id] ?? 0) + 1;
+      });
+      return map;
+    },
+  });
+
   const filtrados = useMemo(() => {
     let arr = q.data ?? [];
     if (fase !== "todas") arr = arr.filter((j) => j.fase === fase);
@@ -82,130 +95,106 @@ function ListaJogosPage() {
     return arr;
   }, [q.data, fase, status, busca, soHoje]);
 
+  const limparFiltros = () => {
+    setBusca("");
+    setFase("todas");
+    setStatus("todos");
+    setSoHoje(false);
+  };
+
+  const algumFiltro =
+    busca.trim() !== "" || fase !== "todas" || status !== "todos" || soHoje;
+
   return (
     <>
-      <PageHeader titulo="Jogos" subtitulo="Os 104 jogos da Copa do Mundo FIFA 2026." />
+      <PageHeader
+        titulo="Jogos"
+        subtitulo={`${filtrados.length} de ${q.data?.length ?? 0} jogos da Copa do Mundo FIFA 2026.`}
+      />
 
-      <div className="glass rounded-2xl p-3 mb-4 grid gap-2 md:grid-cols-[1fr_auto_auto_auto] items-center">
+      <div className="glass rounded-2xl p-3 mb-4 flex flex-col gap-2">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-cl-cinza-texto" />
           <Input
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar time…"
-            className="pl-9 bg-white h-10"
+            placeholder="Buscar por time ou sigla…"
+            className="pl-9 bg-white h-11"
           />
         </div>
-        <Select value={fase} onValueChange={setFase}>
-          <SelectTrigger className="bg-white h-10 min-w-[140px]">
-            <SelectValue placeholder="Fase" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todas">Todas as fases</SelectItem>
-            {fases.map((f) => (
-              <SelectItem key={f} value={f}>
-                {rotuloFase(f)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger className="bg-white h-10 min-w-[150px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos os status</SelectItem>
-            {(Object.keys(STATUS_LABEL) as StatusJogo[]).map((s) => (
-              <SelectItem key={s} value={s}>
-                {STATUS_LABEL[s]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button
-          variant={soHoje ? "default" : "outline"}
-          onClick={() => setSoHoje((v) => !v)}
-          className={
-            soHoje
-              ? "bg-cl-verde hover:bg-cl-verde-escuro text-white h-10"
-              : "border-cl-verde/40 text-cl-verde-escuro hover:bg-cl-verde/10 h-10"
-          }
-        >
-          Hoje
-        </Button>
+        <div className="grid grid-cols-2 gap-2">
+          <Select value={fase} onValueChange={setFase}>
+            <SelectTrigger className="bg-white h-11">
+              <SelectValue placeholder="Fase" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">Todas as fases</SelectItem>
+              {fases.map((f) => (
+                <SelectItem key={f} value={f}>
+                  {rotuloFase(f)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={status} onValueChange={setStatus}>
+            <SelectTrigger className="bg-white h-11">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os status</SelectItem>
+              {(Object.keys(STATUS_LABEL) as StatusJogo[]).map((s) => (
+                <SelectItem key={s} value={s}>
+                  {STATUS_LABEL[s]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant={soHoje ? "default" : "outline"}
+            onClick={() => setSoHoje((v) => !v)}
+            className={
+              soHoje
+                ? "bg-cl-verde hover:bg-cl-verde-escuro text-white h-10 flex-1"
+                : "border-cl-verde/40 text-cl-verde-escuro hover:bg-cl-verde/10 h-10 flex-1"
+            }
+          >
+            Só hoje
+          </Button>
+          {algumFiltro && (
+            <Button
+              variant="ghost"
+              onClick={limparFiltros}
+              className="text-cl-cinza-texto hover:text-cl-verde-escuro h-10"
+            >
+              <X className="size-4 mr-1" /> Limpar
+            </Button>
+          )}
+        </div>
       </div>
 
       {q.isLoading ? (
-        <div className="glass rounded-2xl h-64 animate-pulse" />
+        <div className="space-y-2.5">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="glass rounded-3xl h-[78px] animate-pulse" />
+          ))}
+        </div>
       ) : filtrados.length === 0 ? (
         <div className="glass rounded-2xl p-8 text-center text-cl-cinza-texto text-sm">
           Nenhum jogo encontrado com esses filtros.
         </div>
       ) : (
-        <ul className="glass-data rounded-2xl divide-y divide-cl-verde/10 overflow-hidden">
+        <div className="space-y-2.5">
           {filtrados.map((j) => (
-            <li
+            <CardJogoAdmin
               key={j.id}
-              className="px-3 sm:px-4 py-3 flex items-center gap-2 sm:gap-3 hover:bg-cl-verde/5 transition-colors"
-            >
-              <div className="w-10 text-center font-display text-cl-cinza-texto text-sm tabular-nums shrink-0">
-                #{j.numero_jogo}
-              </div>
-              <div className="hidden md:block w-40 text-xs text-cl-cinza-texto shrink-0">
-                {formatarDataHoraBR(j.data_hora_inicio)}
-              </div>
-              <div className="md:hidden w-20 text-[11px] text-cl-cinza-texto shrink-0">
-                {new Date(j.data_hora_inicio).toLocaleString("pt-BR", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  timeZone: "America/Sao_Paulo",
-                })}
-              </div>
-              <div className="flex-1 min-w-0 flex items-center gap-1.5 justify-center">
-                <Bandeira codigo={j.codigo_a} tamanho={20} />
-                <span className="font-display text-sm text-cl-verde-escuro truncate">
-                  {j.codigo_a ?? j.time_a.slice(0,3).toUpperCase()}
-                </span>
-                <span className="text-cl-cinza-texto text-xs">×</span>
-                <span className="font-display text-sm text-cl-verde-escuro truncate">
-                  {j.codigo_b ?? j.time_b.slice(0,3).toUpperCase()}
-                </span>
-                <Bandeira codigo={j.codigo_b} tamanho={20} />
-              </div>
-              <div className="hidden sm:block text-xs text-cl-cinza-texto w-28 shrink-0 truncate">
-                {rotuloFase(j.fase)}
-              </div>
-              <span
-                className={`hidden sm:inline-block text-[10px] uppercase tracking-wider rounded-full px-2 py-0.5 shrink-0 ${statusBadgeClass(j.status)}`}
-              >
-                {STATUS_LABEL[j.status]}
-              </span>
-              {j.placar_a !== null && j.placar_b !== null ? (
-                <span className="placar-chip text-xs px-2 py-1 shrink-0">
-                  <span>{j.placar_a}</span>
-                  <span className="x">×</span>
-                  <span>{j.placar_b}</span>
-                </span>
-              ) : (
-                <div className="w-12 text-center text-cl-cinza-texto text-xs shrink-0">
-                  –
-                </div>
-              )}
-              <Button
-                asChild
-                size="sm"
-                variant="ghost"
-                className="text-cl-verde-escuro shrink-0"
-              >
-                <Link to="/admin/jogo/$id" params={{ id: j.id }}>
-                  <ArrowRight className="size-4" />
-                </Link>
-              </Button>
-            </li>
+              jogo={j}
+              palpites={palpitesQ.data?.[j.id] ?? 0}
+              mostrarPalpites
+            />
           ))}
-        </ul>
+        </div>
       )}
     </>
   );
