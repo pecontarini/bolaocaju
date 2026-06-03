@@ -32,80 +32,40 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
   if (auth.status !== "in") {
     return (
-      <FundoAreia>
-        <div className="min-h-screen flex items-center justify-center text-cl-verde-escuro">
-          <Loader2 className="size-6 animate-spin" />
-        </div>
-      </FundoAreia>
+      <div className="min-h-screen flex items-center justify-center text-cl-verde-escuro">
+        <Loader2 className="size-6 animate-spin" />
+      </div>
     );
   }
 
   return (
-    <FundoAreia>
-      <div className="min-h-screen flex">
-        <SidebarDesktop />
-        <div className="flex-1 min-w-0">
-          <TopbarMobile email={auth.session.user.email ?? ""} />
-          <main className="mx-auto max-w-5xl px-4 py-6 md:py-8">{children}</main>
-        </div>
-      </div>
-    </FundoAreia>
-  );
-}
-
-function FundoAreia({ children }: { children: ReactNode }) {
-  return (
-    <div className="relative min-h-screen overflow-x-hidden">
-      {/* blobs decorativos */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-32 -left-24 size-[420px] rounded-full opacity-30 blur-3xl"
-        style={{ background: "var(--cl-verde-claro)" }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute top-1/3 -right-32 size-[360px] rounded-full opacity-25 blur-3xl"
-        style={{ background: "var(--cl-laranja)" }}
-      />
-      <div className="relative">{children}</div>
+    <div className="min-h-screen">
+      <HeaderAdmin email={auth.session.user.email ?? ""} />
+      <main className="mx-auto max-w-[480px] px-4 pt-3 pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
+        {children}
+      </main>
     </div>
   );
 }
 
-function SidebarDesktop() {
-  return (
-    <aside className="hidden md:flex md:w-64 shrink-0 sticky top-0 h-screen p-3">
-      <div className="glass rounded-3xl flex flex-col w-full p-4">
-        <Link to="/admin" className="flex items-center justify-center mb-4 mt-2">
-          <img
-            src="/assets/01-logo-horizontal-verde.png"
-            alt="Caju Limão"
-            className="h-14 w-auto"
-          />
-        </Link>
-        <p className="text-[11px] text-center text-cl-cinza-texto uppercase tracking-widest mb-6">
-          Painel administrativo
-        </p>
-        <NavLinks />
-        <div className="mt-auto pt-4">
-          <BotaoSair />
-        </div>
-      </div>
-    </aside>
-  );
-}
-
-function TopbarMobile({ email }: { email: string }) {
+function HeaderAdmin({ email }: { email: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <header className="md:hidden sticky top-0 z-30 p-3">
-      <div className="glass-sticky rounded-2xl flex items-center justify-between px-3 py-2">
-        <Link to="/admin" className="flex items-center">
+    <header className="sticky top-0 z-30 glass-sticky">
+      <div
+        className="mx-auto max-w-[480px] flex items-center justify-between px-4"
+        style={{ height: 52 }}
+      >
+        <Link to="/admin" className="flex items-center gap-2">
           <img
             src="/assets/01-logo-horizontal-verde.png"
             alt="Caju Limão"
-            className="h-10 w-auto"
+            className="h-9 w-auto"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = "none";
+            }}
           />
+          <span className="badge-encerrado ml-1">Admin</span>
         </Link>
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
@@ -113,25 +73,28 @@ function TopbarMobile({ email }: { email: string }) {
               variant="ghost"
               size="icon"
               aria-label="Abrir menu"
-              className="text-cl-verde-escuro"
+              className="text-cl-verde-escuro min-h-11 min-w-11"
             >
               <Menu className="size-6" />
             </Button>
           </SheetTrigger>
           <SheetContent
             side="right"
-            className="bg-cl-verde-escuro text-white border-none w-[80%] flex flex-col"
+            className="bg-cl-verde-escuro text-white border-none w-[78%] flex flex-col"
           >
             <SheetHeader>
-              <SheetTitle className="text-white font-display text-xl text-left">
-                Painel admin
+              <SheetTitle className="text-white font-display text-2xl">
+                Painel Caju Limão
               </SheetTitle>
             </SheetHeader>
-            <p className="text-xs text-white/70 truncate">{email}</p>
-            <nav className="mt-4 flex flex-col gap-1" onClick={() => setOpen(false)}>
+            <p className="text-xs text-white/70 truncate px-2">{email}</p>
+            <nav
+              className="mt-4 flex flex-col gap-1 px-2"
+              onClick={() => setOpen(false)}
+            >
               <NavLinks variant="dark" />
             </nav>
-            <div className="mt-auto">
+            <div className="mt-auto px-2 pb-2">
               <BotaoSair variant="dark" />
             </div>
           </SheetContent>
@@ -144,12 +107,9 @@ function TopbarMobile({ email }: { email: string }) {
 function NavLinks({ variant = "light" }: { variant?: "light" | "dark" }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   return (
-    <nav className="flex flex-col gap-1">
+    <>
       {NAV.map(({ to, label, icon: Icon, exact }) => {
         const active = exact ? pathname === to : pathname.startsWith(to);
-        const baseLight =
-          "text-cl-verde-escuro hover:bg-cl-verde/10";
-        const activeLight = "bg-cl-verde text-white hover:bg-cl-verde";
         const baseDark = "text-white/90 hover:bg-white/10";
         const activeDark = "bg-white/15 font-semibold";
         const cls =
@@ -158,20 +118,20 @@ function NavLinks({ variant = "light" }: { variant?: "light" | "dark" }) {
               ? `${baseDark} ${activeDark}`
               : baseDark
             : active
-              ? activeLight
-              : baseLight;
+              ? "bg-cl-verde text-white"
+              : "text-cl-verde-escuro hover:bg-cl-verde/10";
         return (
           <Link
             key={to}
             to={to}
-            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${cls}`}
+            className={`flex items-center gap-3 rounded-lg px-3 py-3.5 text-base min-h-11 transition-colors ${cls}`}
           >
-            <Icon className="size-4" />
+            <Icon className="size-5" />
             {label}
           </Link>
         );
       })}
-    </nav>
+    </>
   );
 }
 

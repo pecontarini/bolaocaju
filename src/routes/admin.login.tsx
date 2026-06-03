@@ -51,30 +51,10 @@ function AdminLoginPage() {
   }
 
   return (
-    <div className="relative min-h-screen bg-cl-cinza-bg overflow-hidden flex items-center justify-center px-4">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-32 -left-24 size-[420px] rounded-full opacity-30 blur-3xl"
-        style={{ background: "var(--cl-verde-claro)" }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -bottom-32 -right-24 size-[420px] rounded-full opacity-30 blur-3xl"
-        style={{ background: "var(--cl-laranja)" }}
-      />
-      <div
-        aria-hidden
-        className="absolute inset-0 opacity-[0.05] pointer-events-none"
-        style={{
-          backgroundImage: "url('/assets/16-textura-geometrica.png')",
-          backgroundRepeat: "repeat",
-          backgroundSize: "320px",
-        }}
-      />
-
+    <div className="min-h-screen flex items-center justify-center px-4">
       <form
         onSubmit={handleSubmit}
-        className="relative w-full max-w-sm glass rounded-3xl p-7 space-y-5"
+        className="w-full max-w-[420px] glass rounded-3xl p-7 space-y-5"
       >
         <div className="flex flex-col items-center">
           <img
