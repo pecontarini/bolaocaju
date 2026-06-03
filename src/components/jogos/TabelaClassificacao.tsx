@@ -124,14 +124,12 @@ export function HeaderClassificacao({ titulo = "Classificação" }: { titulo?: s
       <img
         src="/assets/08-selo-circular-verde.png"
         alt=""
-        className="h-5 w-5"
+        className="h-6 w-6"
         onError={(e) => {
           (e.currentTarget as HTMLImageElement).style.display = "none";
         }}
       />
-      <p className="font-display text-cl-verde-escuro text-[18px] leading-none">
-        {titulo}
-      </p>
+      <p className="secao-titulo">{titulo}</p>
     </div>
   );
 }
