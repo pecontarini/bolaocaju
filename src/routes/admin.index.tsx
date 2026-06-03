@@ -190,7 +190,7 @@ function ListaJogosAdmin({
   mostrarPalpites: boolean;
 }) {
   return (
-    <ul className="glass rounded-2xl divide-y divide-cl-verde/10 overflow-hidden">
+    <ul className="glass-data rounded-2xl divide-y divide-cl-verde/10 overflow-hidden">
       {jogos.map((j) => (
         <LinhaJogoAdmin
           key={j.id}
