@@ -310,18 +310,49 @@ function TimeBox({ nome, codigo }: { nome: string; codigo: string | null }) {
 function AcaoPremio({ jogo, onDone }: { jogo: Jogo; onDone: () => void }) {
   const [desc, setDesc] = useState(jogo.premio_descricao ?? "");
   const [imgUrl, setImgUrl] = useState(jogo.premio_imagem_url ?? "");
+  const [produtoId, setProdutoId] = useState<string>(
+    jogo.premio_produto_id ?? "",
+  );
+  const [qtd, setQtd] = useState<number>(jogo.premio_quantidade ?? 1);
   const [loading, setLoading] = useState(false);
+
+  const produtosQ = useQuery({
+    queryKey: ["admin", "produtos", "ativos"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("produtos")
+        .select("id,nome,custo_reais,ativo")
+        .eq("ativo", true)
+        .order("nome", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        id: string;
+        nome: string;
+        custo_reais: number | string;
+        ativo: boolean;
+      }>;
+    },
+  });
+
   const sujo =
     desc !== (jogo.premio_descricao ?? "") ||
-    imgUrl !== (jogo.premio_imagem_url ?? "");
+    imgUrl !== (jogo.premio_imagem_url ?? "") ||
+    (produtoId || null) !== (jogo.premio_produto_id ?? null) ||
+    qtd !== (jogo.premio_quantidade ?? 1);
 
   async function salvar() {
+    if (!Number.isInteger(qtd) || qtd < 1) {
+      toast.error("Quantidade deve ser um inteiro maior ou igual a 1.");
+      return;
+    }
     setLoading(true);
     const { error } = await supabase
       .from("jogos")
       .update({
         premio_descricao: desc.trim() || null,
         premio_imagem_url: imgUrl.trim() || null,
+        premio_produto_id: produtoId || null,
+        premio_quantidade: qtd,
       })
       .eq("id", jogo.id);
     setLoading(false);
@@ -337,6 +368,43 @@ function AcaoPremio({ jogo, onDone }: { jogo: Jogo; onDone: () => void }) {
     <section className="glass rounded-3xl p-5">
       <Cabecalho icon={<Gift className="size-5" />} titulo="Prêmio do jogo" passo={2} />
       <div className="space-y-3">
+        <div className="grid grid-cols-[1fr_120px] gap-3">
+          <div>
+            <Label className="text-cl-verde-escuro">Produto bonificável</Label>
+            <Select
+              value={produtoId || "__nenhum"}
+              onValueChange={(v) => setProdutoId(v === "__nenhum" ? "" : v)}
+            >
+              <SelectTrigger className="mt-1 bg-white">
+                <SelectValue placeholder="Selecionar produto" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__nenhum">— Nenhum —</SelectItem>
+                {(produtosQ.data ?? []).map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.nome} · {formatarReais(Number(p.custo_reais))}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="premio-qtd" className="text-cl-verde-escuro">
+              Qtd/comanda
+            </Label>
+            <Input
+              id="premio-qtd"
+              type="number"
+              min={1}
+              max={20}
+              value={qtd}
+              onChange={(e) =>
+                setQtd(Math.max(1, Math.min(20, Number(e.target.value) || 1)))
+              }
+              className="mt-1 bg-white tabular-nums text-center"
+            />
+          </div>
+        </div>
         <div>
           <Label htmlFor="premio-desc" className="text-cl-verde-escuro">
             Descrição
