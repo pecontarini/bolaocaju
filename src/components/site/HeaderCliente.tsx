@@ -9,7 +9,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { useMarcaAtual } from "@/lib/marca";
+import { useBranding } from "@/lib/marca";
 
 const navItens = [
   { to: "/", label: "Início" },
@@ -19,14 +19,7 @@ const navItens = [
 
 export function HeaderCliente() {
   const [open, setOpen] = useState(false);
-  const { marca, slug } = useMarcaAtual();
-  const nomeExibicao =
-    marca?.branding?.nome_exibicao ?? marca?.nome ?? "Bolão";
-  const logoArquivo =
-    marca?.branding?.logo ?? "01-logo-horizontal-verde.png";
-  const logoSrc = marca
-    ? `/assets/${marca.slug}/${logoArquivo}`
-    : "/assets/01-logo-horizontal-verde.png";
+  const { slug, nomeExibicao, logoSrc } = useBranding();
   const logoFallback = "/assets/01-logo-horizontal-verde.png";
   return (
     <header className="sticky top-0 z-30 glass-sticky">
@@ -36,7 +29,7 @@ export function HeaderCliente() {
             key={slug}
             src={logoSrc}
             alt={nomeExibicao}
-            className="h-9 w-auto shrink-0"
+            className="h-10 w-auto shrink-0 max-w-[180px] object-contain"
             onError={(e) => {
               const img = e.currentTarget as HTMLImageElement;
               if (!img.dataset.fb) {
