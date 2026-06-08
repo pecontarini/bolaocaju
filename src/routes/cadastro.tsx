@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/form";
 import { supabase } from "@/integrations/supabase/client";
 import { useCliente } from "@/store/cliente";
-import { useMarcaAtual } from "@/lib/marca";
+import { useMarcaAtual, useBranding } from "@/lib/marca";
 import {
   mascararTelefone,
   normalizarTelefoneBR,
