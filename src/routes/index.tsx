@@ -155,6 +155,7 @@ function TabBar({ ativa, onChange }: { ativa: Aba; onChange: (a: Aba) => void })
 
 function AbaVisaoGeral() {
   const { marca } = useMarcaAtual();
+  const { nomeExibicao, logoSrc } = useBranding();
   const hoje = new Date();
   const antes = hoje < COPA_INICIO;
   const durante = hoje >= COPA_INICIO && hoje <= COPA_FIM;
@@ -256,21 +257,16 @@ function AbaVisaoGeral() {
           }}
         />
         <img
-          src="/assets/05-logo-com-adornos-emblema.png"
-          alt="Caju Limão"
-          className="mx-auto h-20 w-auto"
+          src={logoSrc}
+          alt={nomeExibicao}
+          className="mx-auto h-24 w-auto max-w-[260px] object-contain"
           onError={(e) => {
             const img = e.currentTarget as HTMLImageElement;
-            if (!img.dataset.fb) {
-              img.dataset.fb = "1";
-              img.src = "/assets/02-logo-vertical-verde.png";
-            } else {
-              img.style.display = "none";
-            }
+            img.style.display = "none";
           }}
         />
         <p className="mt-2 font-display text-3xl font-bold text-cl-verde-escuro leading-tight">
-          Bolão Caju Limão
+          Bolão {nomeExibicao}
         </p>
         <p className="mt-1 text-[11px] text-cl-cinza-texto uppercase tracking-[0.18em]">
           Copa do Mundo FIFA 2026
@@ -422,7 +418,7 @@ function AbaVisaoGeral() {
               Cardápio
             </span>
             <span className="block text-xs text-cl-cinza-texto">
-              Escolha a unidade Caju Limão
+              Escolha a unidade {nomeExibicao}
             </span>
           </span>
           <ChevronRight className="size-5 text-cl-cinza-texto" />
