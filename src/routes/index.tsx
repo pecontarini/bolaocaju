@@ -287,13 +287,9 @@ function AbaVisaoGeral() {
         <img
           src={logoSrc}
           alt={nomeExibicao}
-          className="mx-auto h-[140px] w-auto max-w-[280px] object-contain"
-          onError={(e) => {
-            const img = e.currentTarget as HTMLImageElement;
-            img.style.display = "none";
-          }}
+          className="mx-auto h-[180px] w-auto max-w-[320px] object-contain"
         />
-        <p className="mt-3 font-display text-4xl font-bold text-cl-verde-escuro leading-tight">
+        <p className="mt-4 font-display text-2xl font-semibold text-cl-verde-escuro leading-tight">
           Bolão
         </p>
         <p className="mt-1 text-[11px] text-cl-cinza-texto uppercase tracking-[0.18em]">
