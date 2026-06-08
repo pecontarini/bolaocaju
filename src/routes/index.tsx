@@ -499,35 +499,62 @@ function MiniCard({
   );
 }
 
-function SecaoProximoJogo({
+function SecaoJogosAbertos({
   loading,
-  dados,
+  jogos,
+  jaPalpitados,
 }: {
   loading: boolean;
-  dados: { jogo: Jogo; aoVivo: boolean } | null;
+  jogos: Jogo[];
+  jaPalpitados: Set<string>;
 }) {
   if (loading) {
     return (
       <section>
-        <HeaderSecao titulo="Jogo do momento" />
+        <HeaderSecao titulo="Jogos abertos para palpite" />
         <div className="glass rounded-3xl p-5 animate-pulse h-32" />
       </section>
     );
   }
-  if (!dados) {
+  if (jogos.length === 0) {
     return (
       <section>
-        <HeaderSecao titulo="Jogo do momento" />
+        <HeaderSecao titulo="Jogos abertos para palpite" />
         <div className="glass rounded-3xl p-5 text-center">
           <p className="text-sm text-cl-cinza-texto">
-            Nenhum jogo ativo agora.
+            Nenhum jogo aberto agora. Volte mais tarde!
           </p>
         </div>
       </section>
     );
   }
 
-  const { jogo, aoVivo } = dados;
+  return (
+    <section>
+      <HeaderSecao titulo="Jogos abertos para palpite" />
+      <div className="space-y-2.5">
+        {jogos.map((jogo) => (
+          <CardJogoAbertoPalpite
+            key={jogo.id}
+            jogo={jogo}
+            destaque={jogo.status === "ativo"}
+            jaPalpitou={jaPalpitados.has(jogo.id)}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function CardJogoAbertoPalpite({
+  jogo,
+  destaque,
+  jaPalpitou,
+}: {
+  jogo: Jogo;
+  destaque: boolean;
+  jaPalpitou: boolean;
+}) {
   const envolveBrasil = !!jogo.envolve_brasil;
   const dataFmt = format(
     new Date(jogo.data_hora_inicio),
@@ -537,29 +564,20 @@ function SecaoProximoJogo({
   const local = [jogo.estadio, jogo.cidade].filter(Boolean).join(" — ");
 
   return (
-    <section>
-      <div className="flex items-center gap-2 mb-2.5 px-0.5">
-        {aoVivo ? (
-          <>
-            <span className="pulse-dot" aria-hidden />
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cl-laranja">
-              Jogo de agora
-            </p>
-          </>
-        ) : (
-          <>
-            <img
-              src="/assets/08-selo-circular-verde.png"
-              alt=""
-              className="h-5 w-5"
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).style.display = "none";
-              }}
-            />
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cl-verde-escuro">
-              Próximo jogo
-            </p>
-          </>
+    <article
+      className={`glass rounded-3xl p-4 ${
+        destaque
+          ? "ring-2 ring-cl-laranja/50"
+          : envolveBrasil
+            ? "ring-1 ring-cl-laranja/40"
+            : ""
+      }`}
+    >
+      <div className="flex items-center gap-2 mb-2">
+        {destaque && (
+          <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-cl-laranja">
+            <span className="pulse-dot" aria-hidden /> Em destaque
+          </span>
         )}
         {envolveBrasil && (
           <span className="text-[9px] font-semibold uppercase tracking-wider bg-cl-laranja text-white rounded-full px-2 py-0.5">
@@ -567,12 +585,6 @@ function SecaoProximoJogo({
           </span>
         )}
       </div>
-
-      <article
-        className={`glass rounded-3xl p-4 ${
-          envolveBrasil ? "ring-1 ring-cl-laranja/40" : ""
-        }`}
-      >
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
           <div className="flex flex-col items-center gap-1.5 text-center min-w-0">
             <Bandeira codigo={jogo.codigo_a} tamanho={40} />
@@ -587,17 +599,9 @@ function SecaoProximoJogo({
             </p>
           </div>
           <div className="flex flex-col items-center">
-            {aoVivo && jogo.placar_a !== null && jogo.placar_b !== null ? (
-              <span className="placar-chip text-xl">
-                <span>{jogo.placar_a}</span>
-                <span className="x">×</span>
-                <span>{jogo.placar_b}</span>
-              </span>
-            ) : (
-              <span className="font-display text-2xl text-cl-verde-escuro/40 font-bold">
-                ×
-              </span>
-            )}
+            <span className="font-display text-2xl text-cl-verde-escuro/40 font-bold">
+              ×
+            </span>
           </div>
           <div className="flex flex-col items-center gap-1.5 text-center min-w-0">
             <Bandeira codigo={jogo.codigo_b} tamanho={40} />
@@ -626,19 +630,25 @@ function SecaoProximoJogo({
           )}
         </div>
 
+      {jaPalpitou ? (
+        <div className="mt-3 w-full flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold bg-cl-verde/10 text-cl-verde-escuro border border-cl-verde/30">
+          <CheckCircle2 className="size-4" />
+          Palpite registrado
+        </div>
+      ) : (
         <Link
           to="/palpitar/$jogoId"
           params={{ jogoId: jogo.id }}
           className={`mt-3 block w-full text-center rounded-full px-4 py-2.5 text-sm font-semibold transition-colors ${
-            envolveBrasil
+            envolveBrasil || destaque
               ? "bg-cl-laranja text-white hover:bg-cl-laranja/90"
               : "bg-cl-verde text-white hover:bg-cl-verde/90"
           }`}
         >
-          {aoVivo ? "Ver jogo" : "Palpitar"}
+          Palpitar
         </Link>
-      </article>
-    </section>
+      )}
+    </article>
   );
 }
 
