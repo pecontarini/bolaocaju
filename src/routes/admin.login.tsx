@@ -8,6 +8,7 @@ import { useAdminSession } from "@/lib/admin/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useBranding } from "@/lib/marca";
 
 export const Route = createFileRoute("/admin/login")({
   component: AdminLoginPage,
@@ -16,6 +17,7 @@ export const Route = createFileRoute("/admin/login")({
 function AdminLoginPage() {
   const auth = useAdminSession();
   const navigate = useNavigate();
+  const { nomeExibicao, logoSrc } = useBranding();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
@@ -58,15 +60,15 @@ function AdminLoginPage() {
       >
         <div className="flex flex-col items-center text-center">
           <img
-            src="/assets/01-logo-horizontal-verde.png"
-            alt="Caju Limão"
-            className="h-14 w-auto"
+            src={logoSrc}
+            alt={nomeExibicao}
+            className="h-14 w-auto max-w-[220px] object-contain"
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).style.display = "none";
             }}
           />
           <h1 className="font-display font-bold text-cl-verde text-3xl mt-3 leading-tight">
-            Bolão Caju Limão
+            Bolão {nomeExibicao}
           </h1>
           <p className="text-[11px] uppercase tracking-[0.18em] text-cl-cinza-texto mt-1">
             Painel da gerência
