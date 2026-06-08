@@ -61,7 +61,7 @@
   --color-cl-erro: var(--cl-erro);
   --color-cl-aviso: var(--cl-aviso);
 
-  --font-display: "Playfair Display", Georgia, serif;
+  --font-display: var(--brand-font-display, "Playfair Display", Georgia, serif);
   --font-body: "Inter", system-ui, sans-serif;
 }
 
