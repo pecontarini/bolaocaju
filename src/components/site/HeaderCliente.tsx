@@ -9,6 +9,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { useMarcaAtual } from "@/lib/marca";
 
 const navItens = [
   { to: "/", label: "Início" },
@@ -18,19 +19,39 @@ const navItens = [
 
 export function HeaderCliente() {
   const [open, setOpen] = useState(false);
+  const { marca, slug } = useMarcaAtual();
+  const nomeExibicao =
+    marca?.branding?.nome_exibicao ?? marca?.nome ?? "Bolão";
+  const logoArquivo =
+    marca?.branding?.logo ?? "01-logo-horizontal-verde.png";
+  const logoSrc = marca
+    ? `/assets/${marca.slug}/${logoArquivo}`
+    : "/assets/01-logo-horizontal-verde.png";
+  const logoFallback = "/assets/01-logo-horizontal-verde.png";
   return (
     <header className="sticky top-0 z-30 glass-sticky">
       <div className="mx-auto max-w-[480px] flex items-center justify-between px-4 h-13" style={{ height: 52 }}>
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2 min-w-0">
           <img
-            src="/assets/01-logo-horizontal-verde.png"
-            alt="Caju Limão"
-            className="h-9 w-auto"
+            key={slug}
+            src={logoSrc}
+            alt={nomeExibicao}
+            className="h-9 w-auto shrink-0"
             onError={(e) => {
-              (e.currentTarget as HTMLImageElement).style.display = "none";
+              const img = e.currentTarget as HTMLImageElement;
+              if (!img.dataset.fb) {
+                img.dataset.fb = "1";
+                img.src = logoFallback;
+              } else {
+                img.style.display = "none";
+                const sibling = img.nextElementSibling as HTMLElement | null;
+                if (sibling) sibling.classList.remove("sr-only");
+              }
             }}
           />
-          <span className="sr-only">Bolão Caju Limão</span>
+          <span className="sr-only font-display text-lg text-cl-verde-escuro truncate">
+            {nomeExibicao}
+          </span>
         </Link>
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
@@ -49,7 +70,7 @@ export function HeaderCliente() {
           >
             <SheetHeader>
               <SheetTitle className="text-white font-display text-2xl">
-                Bolão Caju Limão
+                {nomeExibicao}
               </SheetTitle>
             </SheetHeader>
             <nav className="mt-6 flex flex-col gap-1 px-2">
@@ -66,7 +87,7 @@ export function HeaderCliente() {
               ))}
             </nav>
             <p className="absolute bottom-6 left-6 right-6 text-xs text-white/70">
-              Bolão oficial Boteco Caju Limão • Copa do Mundo FIFA 2026
+              Bolão oficial {nomeExibicao} • Copa do Mundo FIFA 2026
             </p>
           </SheetContent>
         </Sheet>

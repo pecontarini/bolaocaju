@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/form";
 import { supabase } from "@/integrations/supabase/client";
 import { useCliente } from "@/store/cliente";
+import { useMarcaAtual } from "@/lib/marca";
 import {
   mascararTelefone,
   normalizarTelefoneBR,
@@ -54,6 +55,8 @@ function CadastroPage() {
   const { next } = Route.useSearch();
   const navigate = useNavigate();
   const setCliente = useCliente((s) => s.setCliente);
+  const garantirMarca = useCliente((s) => s.garantirMarca);
+  const { marca } = useMarcaAtual();
   const [enviando, setEnviando] = useState(false);
 
   const form = useForm<FormValues>({
@@ -67,6 +70,10 @@ function CadastroPage() {
   });
 
   async function onSubmit(values: FormValues) {
+    if (!marca) {
+      toast.error("Carregando marca, tente novamente.");
+      return;
+    }
     setEnviando(true);
     const telefoneE164 = normalizarTelefoneBR(values.telefone);
     if (!REGEX_E164_BR.test(telefoneE164)) {
@@ -77,6 +84,7 @@ function CadastroPage() {
     const nome = values.nome.trim();
     try {
       const { data, error } = await supabase.rpc("fn_identificar_cliente", {
+        p_marca_id: marca.id,
         p_nome: nome,
         p_telefone: telefoneE164,
         p_opt_in: values.opt_in_marketing,
@@ -86,10 +94,12 @@ function CadastroPage() {
       if (!cliente?.cliente_id) throw new Error("Resposta inválida do servidor");
       const nomeFinal = (cliente.cliente_nome as string) || nome;
       const telefoneFinal = (cliente.cliente_telefone as string) || telefoneE164;
+      garantirMarca(marca.id);
       setCliente({
         telefone: telefoneFinal,
         nome: nomeFinal,
         cliente_id: cliente.cliente_id as string,
+        marca_id: marca.id,
       });
       toast.success(`Bem-vindo, ${nomeFinal}!`);
       navigate({ to: next as "/palpitar" });

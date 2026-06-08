@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { useAdminSession, signOutAdmin } from "@/lib/admin/auth";
 import { Button } from "@/components/ui/button";
+import { useMarcaAtual } from "@/lib/marca";
 import {
   Sheet,
   SheetContent,
@@ -64,6 +65,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
 function HeaderAdmin({ email }: { email: string }) {
   const [open, setOpen] = useState(false);
+  const { marca } = useMarcaAtual();
+  const nome = marca?.branding?.nome_exibicao ?? marca?.nome ?? "Bolão";
+  const logoArquivo = marca?.branding?.logo ?? "01-logo-horizontal-verde.png";
+  const logoSrc = marca
+    ? `/assets/${marca.slug}/${logoArquivo}`
+    : "/assets/01-logo-horizontal-verde.png";
   return (
     <header className="sticky top-0 z-30 glass-sticky">
       <div
@@ -72,11 +79,17 @@ function HeaderAdmin({ email }: { email: string }) {
       >
         <Link to="/admin" className="flex items-center gap-2">
           <img
-            src="/assets/01-logo-horizontal-verde.png"
-            alt="Caju Limão"
+            src={logoSrc}
+            alt={nome}
             className="h-9 w-auto"
             onError={(e) => {
-              (e.currentTarget as HTMLImageElement).style.display = "none";
+              const img = e.currentTarget as HTMLImageElement;
+              if (!img.dataset.fb) {
+                img.dataset.fb = "1";
+                img.src = "/assets/01-logo-horizontal-verde.png";
+              } else {
+                img.style.display = "none";
+              }
             }}
           />
           <span className="ml-1 inline-flex items-center rounded-full bg-cl-verde/12 text-cl-verde-escuro text-[10px] font-semibold uppercase tracking-[0.14em] px-2 py-0.5 border border-cl-verde/25">
@@ -100,7 +113,7 @@ function HeaderAdmin({ email }: { email: string }) {
           >
             <SheetHeader>
               <SheetTitle className="text-white font-display text-2xl">
-                Painel Caju Limão
+                Painel {nome}
               </SheetTitle>
             </SheetHeader>
             <p className="text-xs text-white/70 truncate px-2">{email}</p>

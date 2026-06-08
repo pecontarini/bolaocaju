@@ -11,6 +11,7 @@ import {
 import type { Jogo } from "@/lib/jogos";
 import { useMemo, useState } from "react";
 import { useJogosRealtime } from "@/hooks/useJogosRealtime";
+import { useMarcaAtual } from "@/lib/marca";
 import { format, differenceInCalendarDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -152,6 +153,7 @@ function TabBar({ ativa, onChange }: { ativa: Aba; onChange: (a: Aba) => void })
 /* =============================================================== */
 
 function AbaVisaoGeral() {
+  const { marca } = useMarcaAtual();
   const hoje = new Date();
   const antes = hoje < COPA_INICIO;
   const durante = hoje >= COPA_INICIO && hoje <= COPA_FIM;
@@ -166,32 +168,46 @@ function AbaVisaoGeral() {
     1,
   );
 
-  // Próximo jogo (ou jogo ao vivo agora). Prioriza ao vivo.
+  // 1) "Jogo do momento": marca_jogos da marca atual com status='ativo'.
+  // 2) Fallback: próximo agendado do calendário global (jogos não finalizados).
   const proximoJogo = useQuery({
-    queryKey: ["home", "proximo-jogo"],
+    queryKey: ["home", "proximo-jogo", marca?.id],
+    enabled: !!marca?.id,
     queryFn: async () => {
-      const agora = new Date();
-      const inicioJanela = new Date(agora.getTime() - 30 * 60 * 1000).toISOString();
-      const fimJanela = new Date(agora.getTime() + 2 * 60 * 60 * 1000).toISOString();
+      const ativoQ = await supabase
+        .from("marca_jogos")
+        .select(
+          "status, palpites_encerrados, premio_descricao, premio_imagem_url, jogos!inner(*)",
+        )
+        .eq("marca_id", marca!.id)
+        .eq("status", "ativo")
+        .maybeSingle();
+      if (ativoQ.error) throw ativoQ.error;
+      if (ativoQ.data) {
+        type Row = {
+          status: string;
+          palpites_encerrados: boolean | null;
+          premio_descricao: string | null;
+          premio_imagem_url: string | null;
+          jogos: Jogo;
+        };
+        const r = ativoQ.data as unknown as Row;
+        const jogo: Jogo = {
+          ...r.jogos,
+          status: r.status as Jogo["status"],
+          palpites_encerrados: r.palpites_encerrados,
+          premio_descricao: r.premio_descricao ?? r.jogos.premio_descricao,
+          premio_imagem_url: r.premio_imagem_url ?? r.jogos.premio_imagem_url,
+        };
+        return { jogo, aoVivo: true };
+      }
 
-      // 1. Ao vivo / aberto agora
-      const aoVivo = await supabase
-        .from("jogos")
-        .select(COLUNAS)
-        .eq("palpites_encerrados", false)
-        .gte("data_hora_inicio", inicioJanela)
-        .lte("data_hora_inicio", fimJanela)
-        .order("data_hora_inicio", { ascending: true })
-        .limit(1);
-      if (aoVivo.error) throw aoVivo.error;
-      const vivo = ((aoVivo.data ?? []) as Jogo[])[0];
-      if (vivo) return { jogo: vivo, aoVivo: true };
-
-      // 2. Próximo agendado
+      // Fallback: próximo agendado do calendário global.
+      const agora = new Date().toISOString();
       const prox = await supabase
         .from("jogos")
         .select(COLUNAS)
-        .gte("data_hora_inicio", agora.toISOString())
+        .gte("data_hora_inicio", agora)
         .order("data_hora_inicio", { ascending: true })
         .limit(1);
       if (prox.error) throw prox.error;
@@ -475,12 +491,23 @@ function SecaoProximoJogo({
   if (loading) {
     return (
       <section>
-        <HeaderSecao titulo="Próximo jogo" />
+        <HeaderSecao titulo="Jogo do momento" />
         <div className="glass rounded-3xl p-5 animate-pulse h-32" />
       </section>
     );
   }
-  if (!dados) return null;
+  if (!dados) {
+    return (
+      <section>
+        <HeaderSecao titulo="Jogo do momento" />
+        <div className="glass rounded-3xl p-5 text-center">
+          <p className="text-sm text-cl-cinza-texto">
+            Nenhum jogo ativo agora.
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   const { jogo, aoVivo } = dados;
   const envolveBrasil = !!jogo.envolve_brasil;

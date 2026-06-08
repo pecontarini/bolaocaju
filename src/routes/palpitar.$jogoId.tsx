@@ -11,6 +11,7 @@ import { useCliente } from "@/store/cliente";
 import { type Jogo } from "@/lib/jogos";
 import { Bandeira } from "@/components/jogos/Bandeira";
 import { useJogosRealtime } from "@/hooks/useJogosRealtime";
+import { useMarcaAtual } from "@/lib/marca";
 
 const COLUNAS =
   "id,numero_jogo,fase,grupo,data_hora_inicio,time_a,codigo_a,time_b,codigo_b,estadio,cidade,pais_sede,status,placar_a,placar_b,palpites_encerrados,premio_descricao,premio_imagem_url,envolve_brasil";
@@ -29,20 +30,48 @@ function PalpitarJogoPage() {
   useJogosRealtime();
   const { jogoId } = Route.useParams();
   const navigate = useNavigate();
+  const { marca } = useMarcaAtual();
   const cliente_id = useCliente((s) => s.cliente_id);
   const nome = useCliente((s) => s.nome);
   const setUltimoPalpite = useCliente((s) => s.setUltimoPalpite);
+  const garantirMarca = useCliente((s) => s.garantirMarca);
+
+  // Se trocou de marca, limpa a sessão do cliente para forçar novo cadastro.
+  useEffect(() => {
+    if (marca?.id) garantirMarca(marca.id);
+  }, [marca?.id, garantirMarca]);
 
   const jogoQ = useQuery({
-    queryKey: ["jogo-palpite", jogoId],
+    queryKey: ["jogo-palpite", jogoId, marca?.id],
+    enabled: !!marca?.id,
     queryFn: async () => {
+      // Busca o jogo no calendário global + o estado da marca atual (marca_jogos).
       const { data, error } = await supabase
-        .from("jogos")
-        .select(COLUNAS)
-        .eq("id", jogoId)
+        .from("marca_jogos")
+        .select(
+          "status, palpites_encerrados, premio_descricao, premio_imagem_url, jogos!inner(*)",
+        )
+        .eq("marca_id", marca!.id)
+        .eq("jogo_id", jogoId)
         .maybeSingle();
       if (error) throw error;
-      return (data ?? null) as Jogo | null;
+      if (!data) return null;
+      type Row = {
+        status: string;
+        palpites_encerrados: boolean | null;
+        premio_descricao: string | null;
+        premio_imagem_url: string | null;
+        jogos: Jogo;
+      };
+      const row = data as unknown as Row;
+      // Sobrescreve campos por-marca na view do jogo.
+      return {
+        ...row.jogos,
+        status: row.status as Jogo["status"],
+        palpites_encerrados: row.palpites_encerrados,
+        premio_descricao: row.premio_descricao ?? row.jogos.premio_descricao,
+        premio_imagem_url: row.premio_imagem_url ?? row.jogos.premio_imagem_url,
+      } as Jogo;
     },
     refetchInterval: 30_000,
   });
@@ -71,7 +100,7 @@ function PalpitarJogoPage() {
     comandaNum <= 9999;
 
   const jogo = jogoQ.data;
-  const jogoAberto = jogo?.status === "ativo";
+  const jogoAberto = jogo?.status === "ativo" && !jogo?.palpites_encerrados;
 
   function pedirGeo() {
     if (!("geolocation" in navigator)) {
@@ -107,7 +136,8 @@ function PalpitarJogoPage() {
   }, [cliente_id, geo.status, jogoAberto]);
 
   async function confirmar() {
-    if (!jogo || !cliente_id || geo.status !== "ok" || enviando) return;
+    if (!jogo || !cliente_id || !marca || geo.status !== "ok" || enviando)
+      return;
     if (!comandaValida) {
       toast.error("Informe o número da comanda (1 a 9999).");
       return;
@@ -115,6 +145,7 @@ function PalpitarJogoPage() {
     setEnviando(true);
     try {
       const { error } = await supabase.from("palpites").insert({
+        marca_id: marca.id,
         jogo_id: jogo.id,
         cliente_id,
         placar_a: placarA,

@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Bandeira } from "@/components/jogos/Bandeira";
 import { useCliente } from "@/store/cliente";
 import { supabase } from "@/integrations/supabase/client";
+import { useMarcaAtual } from "@/lib/marca";
 import {
   mascararTelefone,
   normalizarTelefoneBR,
@@ -44,6 +45,7 @@ type Palpite = {
 
 function MeusPalpitesPage() {
   const telefoneStore = useCliente((s) => s.telefone);
+  const { marca } = useMarcaAtual();
   const [telefoneBusca, setTelefoneBusca] = useState<string | null>(
     telefoneStore,
   );
@@ -54,10 +56,11 @@ function MeusPalpitesPage() {
   }, [telefoneStore]);
 
   const query = useQuery({
-    queryKey: ["meus-palpites", telefoneBusca],
-    enabled: !!telefoneBusca,
+    queryKey: ["meus-palpites", telefoneBusca, marca?.id],
+    enabled: !!telefoneBusca && !!marca?.id,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("fn_meus_palpites", {
+        p_marca_id: marca!.id,
         p_telefone: telefoneBusca!,
       });
       if (error) throw error;
