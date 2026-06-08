@@ -541,7 +541,7 @@ function SecaoJogosAbertos({
     <section>
       <HeaderSecao titulo="Jogos abertos para palpite" />
       <div className="space-y-2.5">
-        {jogos.map((jogo) => (
+        {jogos.slice(0, 2).map((jogo) => (
           <CardJogoAbertoPalpite
             key={jogo.id}
             jogo={jogo}
@@ -550,6 +550,14 @@ function SecaoJogosAbertos({
           />
         ))}
       </div>
+      <Link
+        to="/"
+        search={{ aba: "partidas" }}
+        className="mt-3 flex items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-semibold border border-cl-verde/30 text-cl-verde-escuro hover:bg-cl-verde/5 transition-colors"
+      >
+        Ver todos os jogos
+        <ChevronRight className="size-4" />
+      </Link>
     </section>
   );
 }
