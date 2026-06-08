@@ -209,7 +209,15 @@ function AbaVisaoGeral() {
     refetchInterval: 60_000,
   });
 
-  const jogosAbertos = jogosAbertosQ.data ?? [];
+  const jogosAbertos = useMemo(
+    () =>
+      [...(jogosAbertosQ.data ?? [])].sort(
+        (a, b) =>
+          new Date(a.data_hora_inicio).getTime() -
+          new Date(b.data_hora_inicio).getTime(),
+      ),
+    [jogosAbertosQ.data],
+  );
 
   // Jogos em que o cliente atual já palpitou (para trocar CTA por selo).
   const meusPalpitesQ = useQuery({
@@ -279,14 +287,14 @@ function AbaVisaoGeral() {
         <img
           src={logoSrc}
           alt={nomeExibicao}
-          className="mx-auto h-24 w-auto max-w-[260px] object-contain"
+          className="mx-auto h-[140px] w-auto max-w-[280px] object-contain"
           onError={(e) => {
             const img = e.currentTarget as HTMLImageElement;
             img.style.display = "none";
           }}
         />
-        <p className="mt-2 font-display text-3xl font-bold text-cl-verde-escuro leading-tight">
-          Bolão {nomeExibicao}
+        <p className="mt-3 font-display text-4xl font-bold text-cl-verde-escuro leading-tight">
+          Bolão
         </p>
         <p className="mt-1 text-[11px] text-cl-cinza-texto uppercase tracking-[0.18em]">
           Copa do Mundo FIFA 2026
