@@ -11,7 +11,7 @@ import {
 import type { Jogo } from "@/lib/jogos";
 import { useMemo, useState } from "react";
 import { useJogosRealtime } from "@/hooks/useJogosRealtime";
-import { useMarcaAtual } from "@/lib/marca";
+import { useMarcaAtual, useBranding } from "@/lib/marca";
 import { format, differenceInCalendarDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -69,11 +69,11 @@ type Search = { aba: Aba };
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Bolão Caju Limão — Palpite nos jogos da Copa" },
+      { title: "Bolão — Palpite nos jogos da Copa 2026" },
       {
         name: "description",
         content:
-          "Palpite no placar exato dos jogos da Copa 2026 direto do Boteco Caju Limão.",
+          "Palpite no placar exato dos jogos da Copa do Mundo FIFA 2026.",
       },
     ],
   }),
@@ -97,6 +97,7 @@ function HomeCliente() {
   useJogosRealtime();
   const { aba } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
+  const { nomeExibicao } = useBranding();
 
   function setAba(a: Aba) {
     navigate({ search: { aba: a }, replace: true });
@@ -104,7 +105,7 @@ function HomeCliente() {
 
   return (
     <LayoutCliente>
-      <h1 className="sr-only">Bolão Caju Limão</h1>
+      <h1 className="sr-only">Bolão {nomeExibicao}</h1>
       <TabBar ativa={aba} onChange={setAba} />
 
       <div className="mt-3">
