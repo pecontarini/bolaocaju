@@ -124,18 +124,33 @@ export function useMarcaId(): string | null {
  * Helpers de branding para evitar repetir lógica em componentes.
  * Retorna URL do logo da marca atual (com fallback) e nome de exibição.
  */
+const LOGO_FALLBACK_POR_SLUG: Record<string, string> = {
+  "caju-limao": "caju-logo-horizontal.png",
+  caminito: "caminito-escrita-colorida.png",
+  responsa: "responsa-logo.png",
+};
+const LOGO_BRANCO_FALLBACK_POR_SLUG: Record<string, string> = {
+  "caju-limao": "caju-logo-branco-fundo-verde.png",
+  caminito: "caminito-escrita-branca.png",
+  responsa: "responsa-logo-branco.png",
+};
+
 export function useBranding() {
   const { marca, slug } = useMarcaAtual();
   const nomeExibicao =
     marca?.branding?.nome_exibicao ?? marca?.nome ?? "Bolão";
-  const logoArquivo = marca?.branding?.logo;
-  const logoSrc = marca && logoArquivo
-    ? `/assets/${marca.slug}/${logoArquivo}`
-    : "/assets/01-logo-horizontal-verde.png";
+  const slugMarca = marca?.slug ?? slug;
+  const logoArquivo =
+    marca?.branding?.logo ?? LOGO_FALLBACK_POR_SLUG[slugMarca];
+  const logoSrc = logoArquivo
+    ? `/assets/${slugMarca}/${logoArquivo}`
+    : "/assets/caju-limao/caju-logo-horizontal.png";
   const logoBrancoArquivo =
-    marca?.branding?.logo_branco ?? marca?.branding?.logo;
-  const logoBrancoSrc = marca && logoBrancoArquivo
-    ? `/assets/${marca.slug}/${logoBrancoArquivo}`
+    marca?.branding?.logo_branco ??
+    LOGO_BRANCO_FALLBACK_POR_SLUG[slugMarca] ??
+    logoArquivo;
+  const logoBrancoSrc = logoBrancoArquivo
+    ? `/assets/${slugMarca}/${logoBrancoArquivo}`
     : logoSrc;
   return {
     slug,
