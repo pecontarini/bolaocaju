@@ -17,7 +17,7 @@ import { useJogosRealtime } from "@/hooks/useJogosRealtime";
 export const Route = createFileRoute("/sobre-copa")({
   head: () => ({
     meta: [
-      { title: "Sobre a Copa 2026 — Bolão Caju Limão" },
+      { title: "Sobre a Copa 2026 — Bolão" },
       {
         name: "description",
         content:

@@ -123,7 +123,7 @@ function PalpitarJogoPage() {
         setGeo({
           status: "error",
           mensagem:
-            "Precisamos da sua localização pra confirmar que você está no Caju Limão. Ative a localização no navegador e tente de novo.",
+            "Precisamos da sua localização pra confirmar que você está numa unidade da marca. Ative a localização no navegador e tente de novo.",
         }),
       { enableHighAccuracy: true, timeout: 10_000, maximumAge: 0 },
     );
@@ -160,7 +160,7 @@ function PalpitarJogoPage() {
         if (code === "23505" || m.includes("duplicate")) {
           toast.error("Você já palpitou neste jogo.");
         } else if (m.includes("metros")) {
-          toast.error("Você precisa estar no Caju Limão pra palpitar.");
+          toast.error("Você precisa estar numa unidade da marca pra palpitar.");
         } else if (m.includes("encerrados")) {
           toast.error("Os palpites deste jogo já fecharam.");
         } else if (m.includes("ativo")) {
@@ -464,7 +464,7 @@ function GeoBloco({
           </>
         ) : (
           <p className="text-sm text-cl-verde-escuro">
-            Precisamos da sua localização pra confirmar que você está no Caju Limão.
+            Precisamos da sua localização pra confirmar que você está numa unidade da marca.
           </p>
         )}
       </div>

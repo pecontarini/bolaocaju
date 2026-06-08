@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { useAdminSession, signOutAdmin } from "@/lib/admin/auth";
 import { Button } from "@/components/ui/button";
-import { useMarcaAtual } from "@/lib/marca";
+import { useBranding } from "@/lib/marca";
 import {
   Sheet,
   SheetContent,
@@ -65,12 +65,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
 function HeaderAdmin({ email }: { email: string }) {
   const [open, setOpen] = useState(false);
-  const { marca } = useMarcaAtual();
-  const nome = marca?.branding?.nome_exibicao ?? marca?.nome ?? "Bolão";
-  const logoArquivo = marca?.branding?.logo ?? "01-logo-horizontal-verde.png";
-  const logoSrc = marca
-    ? `/assets/${marca.slug}/${logoArquivo}`
-    : "/assets/01-logo-horizontal-verde.png";
+  const { nomeExibicao: nome, logoSrc } = useBranding();
   return (
     <header className="sticky top-0 z-30 glass-sticky">
       <div

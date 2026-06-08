@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/form";
 import { supabase } from "@/integrations/supabase/client";
 import { useCliente } from "@/store/cliente";
-import { useMarcaAtual } from "@/lib/marca";
+import { useMarcaAtual, useBranding } from "@/lib/marca";
 import {
   mascararTelefone,
   normalizarTelefoneBR,
@@ -57,6 +57,7 @@ function CadastroPage() {
   const setCliente = useCliente((s) => s.setCliente);
   const garantirMarca = useCliente((s) => s.garantirMarca);
   const { marca } = useMarcaAtual();
+  const { nomeExibicao, logoSrc } = useBranding();
   const [enviando, setEnviando] = useState(false);
 
   const form = useForm<FormValues>({
@@ -120,9 +121,12 @@ function CadastroPage() {
     <LayoutCliente>
       <div className="flex flex-col items-center mb-5">
         <img
-          src="/assets/03-logo-texto-verde.png"
-          alt="Caju Limão"
-          className="h-16 w-auto"
+          src={logoSrc}
+          alt={nomeExibicao}
+          className="h-16 w-auto max-w-[220px] object-contain"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).style.display = "none";
+          }}
         />
         <h1 className="font-display text-2xl text-cl-verde-escuro mt-3">
           Bora palpitar?
@@ -212,7 +216,7 @@ function CadastroPage() {
                   />
                 </FormControl>
                 <FormLabel className="text-sm text-cl-cinza-texto cursor-pointer">
-                  Quero receber novidades do Caju Limão
+                  Quero receber novidades do {nomeExibicao}
                 </FormLabel>
               </FormItem>
             )}

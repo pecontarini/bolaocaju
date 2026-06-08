@@ -91,7 +91,7 @@ function MeusPalpitesPage() {
           Meus palpites
         </h1>
         <p className="text-sm text-cl-cinza-texto mt-1">
-          Seu histórico de palpites no Bolão Caju Limão.
+          Seu histórico de palpites no Bolão.
         </p>
       </div>
 
