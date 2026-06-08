@@ -48,9 +48,24 @@ function aplicarBranding(slug: string, branding: Branding) {
   // Marcador para CSS específico por marca, se necessário.
   root.dataset.marca = slug;
 
+  // Fonte display por marca. "a definir" / vazio -> serif genérico.
+  const fonte = (branding.fonte_display ?? "").trim().toLowerCase();
+  let fontStack = '"Playfair Display", Georgia, serif';
+  if (fonte.includes("thunder")) {
+    fontStack = '"Thunder", "Playfair Display", Georgia, serif';
+  } else if (fonte && !fonte.includes("definir") && !fonte.includes("playfair")) {
+    // Marca com fonte custom nomeada (assume disponível via @font-face/Google Fonts)
+    fontStack = `"${branding.fonte_display}", Georgia, serif`;
+  } else if (fonte.includes("definir") || fonte === "") {
+    fontStack = 'Georgia, "Times New Roman", serif';
+  }
+  // Caju sempre Playfair
+  if (slug === "caju-limao") fontStack = '"Playfair Display", Georgia, serif';
+  root.style.setProperty("--font-display", fontStack);
+
   // Título e favicon
   if (branding.nome_exibicao) {
-    document.title = `${branding.nome_exibicao} — Bolão Copa 2026`;
+    document.title = `Bolão ${branding.nome_exibicao} — Copa do Mundo FIFA 2026`;
   }
   if (branding.icone) {
     const href = `/assets/${slug}/${branding.icone}`;
