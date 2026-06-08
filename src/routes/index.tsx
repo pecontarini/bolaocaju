@@ -158,6 +158,7 @@ function TabBar({ ativa, onChange }: { ativa: Aba; onChange: (a: Aba) => void })
 function AbaVisaoGeral() {
   const { marca } = useMarcaAtual();
   const { nomeExibicao, logoSrc } = useBranding();
+  const cliente_id = useCliente((s) => s.cliente_id);
   const hoje = new Date();
   const antes = hoje < COPA_INICIO;
   const durante = hoje >= COPA_INICIO && hoje <= COPA_FIM;
@@ -172,54 +173,71 @@ function AbaVisaoGeral() {
     1,
   );
 
-  // 1) "Jogo do momento": marca_jogos da marca atual com status='ativo'.
-  // 2) Fallback: próximo agendado do calendário global (jogos não finalizados).
-  const proximoJogo = useQuery({
-    queryKey: ["home", "proximo-jogo", marca?.id],
+  // Lista de jogos abertos para palpite na marca atual: status in (ativo, habilitado) e não encerrados.
+  const jogosAbertosQ = useQuery({
+    queryKey: ["home", "jogos-abertos", marca?.id],
     enabled: !!marca?.id,
     queryFn: async () => {
-      const ativoQ = await supabase
+      const { data, error } = await supabase
         .from("marca_jogos")
         .select(
           "status, palpites_encerrados, premio_descricao, premio_imagem_url, jogos!inner(*)",
         )
         .eq("marca_id", marca!.id)
-        .eq("status", "ativo")
-        .maybeSingle();
-      if (ativoQ.error) throw ativoQ.error;
-      if (ativoQ.data) {
-        type Row = {
-          status: string;
-          palpites_encerrados: boolean | null;
-          premio_descricao: string | null;
-          premio_imagem_url: string | null;
-          jogos: Jogo;
-        };
-        const r = ativoQ.data as unknown as Row;
-        const jogo: Jogo = {
-          ...r.jogos,
-          status: r.status as Jogo["status"],
-          palpites_encerrados: r.palpites_encerrados,
-          premio_descricao: r.premio_descricao ?? r.jogos.premio_descricao,
-          premio_imagem_url: r.premio_imagem_url ?? r.jogos.premio_imagem_url,
-        };
-        return { jogo, aoVivo: true };
-      }
-
-      // Fallback: próximo agendado do calendário global.
-      const agora = new Date().toISOString();
-      const prox = await supabase
-        .from("jogos")
-        .select(COLUNAS)
-        .gte("data_hora_inicio", agora)
-        .order("data_hora_inicio", { ascending: true })
-        .limit(1);
-      if (prox.error) throw prox.error;
-      const j = ((prox.data ?? []) as Jogo[])[0] ?? null;
-      return j ? { jogo: j, aoVivo: false } : null;
+        .in("status", ["ativo", "habilitado"])
+        .eq("palpites_encerrados", false)
+        .order("data_hora_inicio", {
+          ascending: true,
+          referencedTable: "jogos",
+        });
+      if (error) throw error;
+      type Row = {
+        status: string;
+        palpites_encerrados: boolean | null;
+        premio_descricao: string | null;
+        premio_imagem_url: string | null;
+        jogos: Jogo;
+      };
+      return ((data ?? []) as unknown as Row[]).map((r) => ({
+        ...r.jogos,
+        status: r.status as Jogo["status"],
+        palpites_encerrados: r.palpites_encerrados,
+        premio_descricao: r.premio_descricao ?? r.jogos.premio_descricao,
+        premio_imagem_url: r.premio_imagem_url ?? r.jogos.premio_imagem_url,
+      })) as Jogo[];
     },
     refetchInterval: 60_000,
   });
+
+  const jogosAbertos = jogosAbertosQ.data ?? [];
+
+  // Jogos em que o cliente atual já palpitou (para trocar CTA por selo).
+  const meusPalpitesQ = useQuery({
+    queryKey: [
+      "home",
+      "meus-palpites-abertos",
+      marca?.id,
+      cliente_id,
+      jogosAbertos.map((j) => j.id).join(","),
+    ],
+    enabled: !!marca?.id && !!cliente_id && jogosAbertos.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("palpites")
+        .select("jogo_id")
+        .eq("marca_id", marca!.id)
+        .eq("cliente_id", cliente_id!)
+        .in(
+          "jogo_id",
+          jogosAbertos.map((j) => j.id),
+        );
+      if (error) throw error;
+      return new Set(
+        ((data ?? []) as { jogo_id: string }[]).map((p) => p.jogo_id),
+      );
+    },
+  });
+  const jaPalpitados = meusPalpitesQ.data ?? new Set<string>();
 
   // Números da Copa: 104 jogos / cidades distintas
   const numerosCopa = useQuery({
@@ -275,10 +293,11 @@ function AbaVisaoGeral() {
         </p>
       </section>
 
-      {/* Próximo jogo / Jogo de agora */}
-      <SecaoProximoJogo
-        loading={proximoJogo.isLoading}
-        dados={proximoJogo.data ?? null}
+      {/* Jogos abertos para palpite */}
+      <SecaoJogosAbertos
+        loading={jogosAbertosQ.isLoading}
+        jogos={jogosAbertos}
+        jaPalpitados={jaPalpitados}
       />
 
       {/* Estado da Copa */}
