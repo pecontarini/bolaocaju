@@ -119,3 +119,30 @@ export function useMarcaId(): string | null {
   const marca = useMarcaStore((s) => s.marca);
   return marca?.id ?? null;
 }
+
+/**
+ * Helpers de branding para evitar repetir lógica em componentes.
+ * Retorna URL do logo da marca atual (com fallback) e nome de exibição.
+ */
+export function useBranding() {
+  const { marca, slug } = useMarcaAtual();
+  const nomeExibicao =
+    marca?.branding?.nome_exibicao ?? marca?.nome ?? "Bolão";
+  const logoArquivo = marca?.branding?.logo;
+  const logoSrc = marca && logoArquivo
+    ? `/assets/${marca.slug}/${logoArquivo}`
+    : "/assets/01-logo-horizontal-verde.png";
+  const logoBrancoArquivo =
+    marca?.branding?.logo_branco ?? marca?.branding?.logo;
+  const logoBrancoSrc = marca && logoBrancoArquivo
+    ? `/assets/${marca.slug}/${logoBrancoArquivo}`
+    : logoSrc;
+  return {
+    slug,
+    marca,
+    nomeExibicao,
+    logoSrc,
+    logoBrancoSrc,
+    fonteDisplay: marca?.branding?.fonte_display,
+  };
+}
