@@ -491,12 +491,23 @@ function SecaoProximoJogo({
   if (loading) {
     return (
       <section>
-        <HeaderSecao titulo="Próximo jogo" />
+        <HeaderSecao titulo="Jogo do momento" />
         <div className="glass rounded-3xl p-5 animate-pulse h-32" />
       </section>
     );
   }
-  if (!dados) return null;
+  if (!dados) {
+    return (
+      <section>
+        <HeaderSecao titulo="Jogo do momento" />
+        <div className="glass rounded-3xl p-5 text-center">
+          <p className="text-sm text-cl-cinza-texto">
+            Nenhum jogo ativo agora.
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   const { jogo, aoVivo } = dados;
   const envolveBrasil = !!jogo.envolve_brasil;
