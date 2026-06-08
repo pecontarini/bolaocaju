@@ -12,6 +12,7 @@ import type { Jogo } from "@/lib/jogos";
 import { useMemo, useState } from "react";
 import { useJogosRealtime } from "@/hooks/useJogosRealtime";
 import { useMarcaAtual, useBranding } from "@/lib/marca";
+import { useCliente } from "@/store/cliente";
 import { format, differenceInCalendarDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -38,6 +39,7 @@ import {
   Globe2,
   Ticket,
   CalendarDays,
+  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 
