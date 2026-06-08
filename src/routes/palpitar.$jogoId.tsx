@@ -100,7 +100,9 @@ function PalpitarJogoPage() {
     comandaNum <= 9999;
 
   const jogo = jogoQ.data;
-  const jogoAberto = jogo?.status === "ativo" && !jogo?.palpites_encerrados;
+  const jogoAberto =
+    (jogo?.status === "ativo" || jogo?.status === "habilitado") &&
+    !jogo?.palpites_encerrados;
 
   function pedirGeo() {
     if (!("geolocation" in navigator)) {
