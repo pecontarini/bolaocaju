@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { useAdminSession, signOutAdmin } from "@/lib/admin/auth";
 import { Button } from "@/components/ui/button";
-import { useMarcaAtual } from "@/lib/marca";
+import { useBranding } from "@/lib/marca";
 import {
   Sheet,
   SheetContent,
