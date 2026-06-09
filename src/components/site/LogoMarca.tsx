@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useBranding } from "@/lib/marca";
+import { useState } from "react";
+import { useMarcaAtual } from "@/lib/marca";
 
 type Props = {
   variante?: "padrao" | "branco";
@@ -10,9 +10,9 @@ type Props = {
 };
 
 /**
- * Logo da marca atual com fallback gracioso: se a imagem falhar (404, etc),
- * mostra o nome_exibicao em texto na fonte display e cor primária da marca.
- * NUNCA cai para o logo de outra marca.
+ * Logo da marca atual. Lê marca.branding.logo (URL completa do Storage) e
+ * SOMENTE cai para o nome em texto se a URL não existir ou a imagem
+ * falhar de verdade ao carregar. Cada instância tem seu próprio estado.
  */
 export function LogoMarca({
   variante = "padrao",
@@ -21,37 +21,46 @@ export function LogoMarca({
   fallbackClassName,
   alt,
 }: Props) {
-  const { slug, nomeExibicao, logoSrc, logoBrancoSrc } = useBranding();
-  const src = variante === "branco" ? logoBrancoSrc : logoSrc;
-  const [erro, setErro] = useState(false);
+  const { marca } = useMarcaAtual();
+  const [falhou, setFalhou] = useState(false);
 
-  // Reset error state when brand (and therefore src) changes.
-  useEffect(() => {
-    setErro(false);
-  }, [slug, src]);
+  const logoUrl =
+    variante === "branco"
+      ? marca?.branding?.logo_branco ?? marca?.branding?.logo
+      : marca?.branding?.logo;
+  const nome =
+    marca?.branding?.nome_exibicao ?? marca?.nome ?? "Bolão";
+  const cor =
+    variante === "branco"
+      ? "#ffffff"
+      : marca?.branding?.cor_primaria ?? "var(--cl-verde-escuro)";
+  const fonte =
+    marca?.branding?.fonte_display
+      ? `"${marca.branding.fonte_display}", serif`
+      : "var(--brand-font-display)";
 
-  if (erro || !src) {
+  if (typeof window !== "undefined") {
+    // eslint-disable-next-line no-console
+    console.log("LOGO URL:", logoUrl);
+  }
+
+  if (!logoUrl || falhou) {
     return (
       <span
         className={fallbackClassName ?? className}
-        style={{
-          fontFamily: "var(--brand-font-display)",
-          color:
-            variante === "branco" ? "#ffffff" : "var(--cl-verde-escuro)",
-        }}
+        style={{ fontFamily: fonte, color: cor, fontWeight: 700, lineHeight: 1.1 }}
       >
-        {nomeExibicao}
+        {nome}
       </span>
     );
   }
 
   return (
     <img
-      key={src}
-      src={src}
-      alt={alt ?? nomeExibicao}
+      src={logoUrl}
+      alt={alt ?? nome}
       className={imgClassName ?? className}
-      onError={() => setErro(true)}
+      onError={() => setFalhou(true)}
     />
   );
 }
