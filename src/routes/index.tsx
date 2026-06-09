@@ -17,13 +17,6 @@ import { useCliente } from "@/store/cliente";
 import { format, differenceInCalendarDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import {
   Accordion,
   AccordionContent,
   AccordionItem,
@@ -48,11 +41,6 @@ import { toast } from "sonner";
 
 const COPA_INICIO = new Date("2026-06-11T00:00:00-03:00");
 const COPA_FIM = new Date("2026-07-19T23:59:59-03:00");
-
-const CARDAPIO = {
-  brasilia: "https://www.hubt.com.br/boteco-caju-limao/",
-  saoPaulo: "https://www.hubt.com.br/boteco-caju-limao/2",
-} as const;
 
 const COLUNAS =
   "id,numero_jogo,fase,grupo,rodada,data_hora_inicio,time_a,codigo_a,time_b,codigo_b,estadio,cidade,pais_sede,status,placar_a,placar_b,palpites_encerrados,premio_descricao,premio_imagem_url,envolve_brasil";
@@ -273,7 +261,41 @@ function AbaVisaoGeral() {
     },
   });
 
-  const [cardapioAberto, setCardapioAberto] = useState(false);
+  async function abrirCardapio() {
+    const fallback = marca?.branding?.cardapio_url;
+    const openFallback = () => {
+      if (fallback) window.open(fallback, "_blank", "noopener,noreferrer");
+      else toast.error("Cardápio indisponível no momento.");
+    };
+    if (!marca?.id || typeof navigator === "undefined" || !("geolocation" in navigator)) {
+      openFallback();
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { data, error } = await supabase.rpc("fn_cardapio_por_geo", {
+            p_lat: pos.coords.latitude,
+            p_lon: pos.coords.longitude,
+            p_marca_id: marca.id,
+          });
+          if (error) {
+            console.error(error);
+            openFallback();
+            return;
+          }
+          const url = (data as string | null) ?? fallback;
+          if (url) window.open(url, "_blank", "noopener,noreferrer");
+          else toast.error("Cardápio indisponível no momento.");
+        } catch (e) {
+          console.error(e);
+          openFallback();
+        }
+      },
+      () => openFallback(),
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 },
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -438,7 +460,7 @@ function AbaVisaoGeral() {
 
         <button
           type="button"
-          onClick={() => setCardapioAberto(true)}
+          onClick={abrirCardapio}
           className="glass rounded-2xl p-4 flex items-center gap-3 card-press text-left"
         >
           <span className="size-10 rounded-full bg-cl-laranja/20 flex items-center justify-center text-cl-verde-escuro">
@@ -449,18 +471,13 @@ function AbaVisaoGeral() {
               Cardápio
             </span>
             <span className="block text-xs text-cl-cinza-texto">
-              Escolha a unidade {nomeExibicao}
+              Abre o cardápio da unidade {nomeExibicao}
             </span>
           </span>
           <ChevronRight className="size-5 text-cl-cinza-texto" />
         </button>
         </div>
       </section>
-
-      <EscolhaUnidadeDialog
-        aberto={cardapioAberto}
-        onMudou={setCardapioAberto}
-      />
     </div>
   );
 }
@@ -667,53 +684,6 @@ function CardJogoAbertoPalpite({
         </Link>
       )}
     </article>
-  );
-}
-
-function EscolhaUnidadeDialog({
-  aberto,
-  onMudou,
-}: {
-  aberto: boolean;
-  onMudou: (v: boolean) => void;
-}) {
-  function abrir(url: string) {
-    onMudou(false);
-    window.open(url, "_blank", "noopener,noreferrer");
-  }
-  return (
-    <Dialog open={aberto} onOpenChange={onMudou}>
-      <DialogContent className="max-w-sm rounded-3xl">
-        <DialogHeader>
-          <DialogTitle className="font-display text-cl-verde-escuro text-xl">
-            Escolha sua unidade
-          </DialogTitle>
-          <DialogDescription>
-            O cardápio abrirá em uma nova aba.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-3 mt-2">
-          <button
-            type="button"
-            onClick={() => abrir(CARDAPIO.brasilia)}
-            className="w-full text-left p-4 rounded-2xl border border-cl-verde/20 bg-white hover:bg-cl-verde/5 transition-colors"
-          >
-            <p className="font-semibold text-cl-verde-escuro">Brasília</p>
-            <p className="text-xs text-cl-cinza-texto mt-0.5">
-              Asa Norte / Sudoeste
-            </p>
-          </button>
-          <button
-            type="button"
-            onClick={() => abrir(CARDAPIO.saoPaulo)}
-            className="w-full text-left p-4 rounded-2xl border border-cl-verde/20 bg-white hover:bg-cl-verde/5 transition-colors"
-          >
-            <p className="font-semibold text-cl-verde-escuro">São Paulo</p>
-            <p className="text-xs text-cl-cinza-texto mt-0.5">Itaim</p>
-          </button>
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 }
 
