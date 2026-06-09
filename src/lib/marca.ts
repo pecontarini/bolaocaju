@@ -35,22 +35,6 @@ export function resolverSlugMarca(): string {
   if (typeof window === "undefined") return SLUG_DEFAULT;
   const url = new URL(window.location.href);
   const queryMarca = url.searchParams.get("marca")?.trim().toLowerCase();
-
-  const host = url.hostname.toLowerCase();
-  const ehPreview =
-    host === "localhost" ||
-    host === "127.0.0.1" ||
-    host.endsWith(".lovable.app") ||
-    host.endsWith(".lovableproject.com");
-
-  if (!ehPreview) {
-    const partes = host.split(".");
-    if (partes.length >= 3) {
-      const sub = partes[0];
-      if (sub && sub !== "www" && sub !== "bolao") return sub;
-    }
-  }
-
   if (queryMarca && /^[a-z0-9-]+$/.test(queryMarca)) return queryMarca;
   return SLUG_DEFAULT;
 }
