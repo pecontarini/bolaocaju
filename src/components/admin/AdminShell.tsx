@@ -44,6 +44,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen">
       <HeaderAdmin email={auth.session.user.email ?? ""} />
+      <FaixaPatrocinio />
       <main className="mx-auto max-w-[480px] px-4 pt-3 pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
         {children}
       </main>
@@ -60,7 +61,6 @@ export function AdminShell({ children }: { children: ReactNode }) {
           </a>
         </p>
       </footer>
-      <FaixaPatrocinio />
     </div>
   );
 }
