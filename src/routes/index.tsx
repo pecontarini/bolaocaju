@@ -17,13 +17,6 @@ import { useCliente } from "@/store/cliente";
 import { format, differenceInCalendarDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import {
   Accordion,
   AccordionContent,
   AccordionItem,
@@ -48,11 +41,6 @@ import { toast } from "sonner";
 
 const COPA_INICIO = new Date("2026-06-11T00:00:00-03:00");
 const COPA_FIM = new Date("2026-07-19T23:59:59-03:00");
-
-const CARDAPIO = {
-  brasilia: "https://www.hubt.com.br/boteco-caju-limao/",
-  saoPaulo: "https://www.hubt.com.br/boteco-caju-limao/2",
-} as const;
 
 const COLUNAS =
   "id,numero_jogo,fase,grupo,rodada,data_hora_inicio,time_a,codigo_a,time_b,codigo_b,estadio,cidade,pais_sede,status,placar_a,placar_b,palpites_encerrados,premio_descricao,premio_imagem_url,envolve_brasil";
