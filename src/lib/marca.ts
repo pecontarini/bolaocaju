@@ -73,11 +73,43 @@ export const useMarcaStore = create<MarcaStore>((set) => ({
 export function useMarcaAtual() {
   const slug = useMarcaStore((s) => s.slug);
   const setMarca = useMarcaStore((s) => s.setMarca);
+  const setSlug = useMarcaStore((s) => s.setSlug);
   const marcaGuardada = useMarcaStore((s) => s.marca);
 
+  const host =
+    typeof window === "undefined"
+      ? ""
+      : window.location.hostname.toLowerCase();
+  const ehPreviewHost =
+    !host ||
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host.endsWith(".lovable.app") ||
+    host.endsWith(".lovableproject.com");
+
   const q = useQuery({
-    queryKey: ["marca", slug],
+    queryKey: ["marca", host, slug],
     queryFn: async (): Promise<Marca> => {
+      // 1) Resolução por hostname real (domínios de produção).
+      if (!ehPreviewHost) {
+        const { data: porDominio, error: errDom } = await supabase
+          .from("marcas")
+          .select("id, slug, nome, branding")
+          .eq("dominio", host)
+          .eq("ativo", true)
+          .maybeSingle();
+        if (errDom) throw errDom;
+        if (porDominio) {
+          const m = porDominio as Marca;
+          // eslint-disable-next-line no-console
+          console.log("HOST:", host, "| marca:", m.slug);
+          setMarca(m);
+          setSlug(m.slug);
+          return m;
+        }
+      }
+
+      // 2) Resolução por slug (querystring / default).
       const { data, error } = await supabase
         .from("marcas")
         .select("id, slug, nome, branding")
@@ -95,10 +127,14 @@ export function useMarcaAtual() {
         if (def.error) throw def.error;
         if (!def.data) throw new Error("Marca default não encontrada");
         const m = def.data as Marca;
+        // eslint-disable-next-line no-console
+        console.log("HOST:", host, "| marca:", m.slug, "(fallback default)");
         setMarca(m);
         return m;
       }
       const m = data as Marca;
+      // eslint-disable-next-line no-console
+      console.log("HOST:", host, "| marca:", m.slug);
       setMarca(m);
       return m;
     },
