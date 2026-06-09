@@ -9,7 +9,7 @@ import {
   type LinhaClassificacao,
 } from "@/components/jogos/TabelaClassificacao";
 import type { Jogo } from "@/lib/jogos";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useJogosRealtime } from "@/hooks/useJogosRealtime";
 import { useMarcaAtual, useBranding } from "@/lib/marca";
 import { LogoMarca } from "@/components/site/LogoMarca";
