@@ -44,8 +44,7 @@ type MarcaStore = {
 };
 
 export const useMarcaStore = create<MarcaStore>((set) => ({
-  slug:
-    typeof window === "undefined" ? SLUG_DEFAULT : resolverSlugMarca(),
+  slug: typeof window === "undefined" ? null : resolverSlugMarca(),
   marca: null,
   setSlug: (slug) => set({ slug }),
   setMarca: (marca) => set({ marca }),
