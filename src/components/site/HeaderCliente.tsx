@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useBranding } from "@/lib/marca";
+import { LogoMarca } from "@/components/site/LogoMarca";
 
 const navItens = [
   { to: "/", label: "Início" },
@@ -19,32 +20,15 @@ const navItens = [
 
 export function HeaderCliente() {
   const [open, setOpen] = useState(false);
-  const { slug, nomeExibicao, logoSrc } = useBranding();
-  const logoFallback = "/assets/01-logo-horizontal-verde.png";
+  const { nomeExibicao } = useBranding();
   return (
     <header className="sticky top-0 z-30 glass-sticky">
       <div className="mx-auto max-w-[480px] flex items-center justify-between px-4 h-13" style={{ height: 52 }}>
         <Link to="/" className="flex items-center gap-2 min-w-0">
-          <img
-            key={slug}
-            src={logoSrc}
-            alt={nomeExibicao}
-            className="h-10 w-auto shrink-0 max-w-[180px] object-contain"
-            onError={(e) => {
-              const img = e.currentTarget as HTMLImageElement;
-              if (!img.dataset.fb) {
-                img.dataset.fb = "1";
-                img.src = logoFallback;
-              } else {
-                img.style.display = "none";
-                const sibling = img.nextElementSibling as HTMLElement | null;
-                if (sibling) sibling.classList.remove("sr-only");
-              }
-            }}
+          <LogoMarca
+            imgClassName="h-10 w-auto shrink-0 max-w-[180px] object-contain"
+            fallbackClassName="font-display text-lg text-cl-verde-escuro truncate max-w-[180px]"
           />
-          <span className="sr-only font-display text-lg text-cl-verde-escuro truncate">
-            {nomeExibicao}
-          </span>
         </Link>
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>

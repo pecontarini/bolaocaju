@@ -12,6 +12,7 @@ import type { Jogo } from "@/lib/jogos";
 import { useMemo, useState } from "react";
 import { useJogosRealtime } from "@/hooks/useJogosRealtime";
 import { useMarcaAtual, useBranding } from "@/lib/marca";
+import { LogoMarca } from "@/components/site/LogoMarca";
 import { useCliente } from "@/store/cliente";
 import { format, differenceInCalendarDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -157,7 +158,7 @@ function TabBar({ ativa, onChange }: { ativa: Aba; onChange: (a: Aba) => void })
 
 function AbaVisaoGeral() {
   const { marca } = useMarcaAtual();
-  const { nomeExibicao, logoSrc } = useBranding();
+  const { nomeExibicao } = useBranding();
   const cliente_id = useCliente((s) => s.cliente_id);
   const hoje = new Date();
   const antes = hoje < COPA_INICIO;
@@ -284,10 +285,9 @@ function AbaVisaoGeral() {
             backgroundRepeat: "repeat",
           }}
         />
-        <img
-          src={logoSrc}
-          alt={nomeExibicao}
-          className="mx-auto h-[180px] w-auto max-w-[320px] object-contain"
+        <LogoMarca
+          imgClassName="mx-auto h-[180px] w-auto max-w-[320px] object-contain"
+          fallbackClassName="block mx-auto font-display text-4xl font-bold text-cl-verde-escuro"
         />
         <p className="mt-4 font-display text-2xl font-semibold text-cl-verde-escuro leading-tight">
           Bolão
