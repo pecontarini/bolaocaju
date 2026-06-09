@@ -26,8 +26,8 @@ export function HeaderCliente() {
       <div className="mx-auto max-w-[480px] flex items-center justify-between px-4 h-13" style={{ height: 52 }}>
         <Link to="/" className="flex items-center gap-2 min-w-0">
           <LogoMarca
-            imgClassName="h-10 w-auto shrink-0 max-w-[180px] object-contain"
-            fallbackClassName="font-display text-lg text-cl-verde-escuro truncate max-w-[180px]"
+            imgClassName="h-9 w-auto shrink-0 max-w-[160px] object-contain"
+            fallbackClassName="font-display text-base text-cl-verde-escuro truncate max-w-[160px]"
           />
         </Link>
         <Sheet open={open} onOpenChange={setOpen}>
