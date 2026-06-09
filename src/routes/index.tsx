@@ -9,7 +9,7 @@ import {
   type LinhaClassificacao,
 } from "@/components/jogos/TabelaClassificacao";
 import type { Jogo } from "@/lib/jogos";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useJogosRealtime } from "@/hooks/useJogosRealtime";
 import { useMarcaAtual, useBranding } from "@/lib/marca";
 import { LogoMarca } from "@/components/site/LogoMarca";
@@ -160,15 +160,21 @@ function AbaVisaoGeral() {
   const { marca } = useMarcaAtual();
   const { nomeExibicao } = useBranding();
   const cliente_id = useCliente((s) => s.cliente_id);
-  const hoje = new Date();
-  const antes = hoje < COPA_INICIO;
-  const durante = hoje >= COPA_INICIO && hoje <= COPA_FIM;
+  const [hoje, setHoje] = useState<Date | null>(null);
+  useEffect(() => {
+    setHoje(new Date());
+    const id = setInterval(() => setHoje(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+  const antes = !!hoje && hoje < COPA_INICIO;
+  const durante = !!hoje && hoje >= COPA_INICIO && hoje <= COPA_FIM;
+  const depois = !!hoje && hoje > COPA_FIM;
   const diasFaltam = Math.max(
     0,
-    differenceInCalendarDays(COPA_INICIO, hoje),
+    hoje ? differenceInCalendarDays(COPA_INICIO, hoje) : 0,
   );
   const progresso = clamp(
-    (hoje.getTime() - COPA_INICIO.getTime()) /
+    ((hoje?.getTime() ?? COPA_INICIO.getTime()) - COPA_INICIO.getTime()) /
       (COPA_FIM.getTime() - COPA_INICIO.getTime()),
     0,
     1,
@@ -351,7 +357,7 @@ function AbaVisaoGeral() {
           </div>
         )}
 
-        {!antes && !durante && (
+        {depois && (
           <div className="text-center">
             <p className="font-display text-xl text-cl-verde-escuro">
               Copa encerrada
