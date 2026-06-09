@@ -149,7 +149,7 @@ export function useBranding() {
   const { marca, slug } = useMarcaAtual();
   const nomeExibicao =
     marca?.branding?.nome_exibicao ?? marca?.nome ?? "Bolão";
-  const slugMarca = marca?.slug ?? slug;
+  const slugMarca = marca?.slug ?? slug ?? SLUG_DEFAULT;
   const logoArquivo =
     marca?.branding?.logo ?? LOGO_FALLBACK_POR_SLUG[slugMarca];
   const logoSrc = logoArquivo
