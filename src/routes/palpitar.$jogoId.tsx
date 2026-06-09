@@ -12,6 +12,7 @@ import { type Jogo } from "@/lib/jogos";
 import { Bandeira } from "@/components/jogos/Bandeira";
 import { useJogosRealtime } from "@/hooks/useJogosRealtime";
 import { useMarcaAtual } from "@/lib/marca";
+import { usePatrocinador } from "@/components/site/FaixaPatrocinio";
 
 const COLUNAS =
   "id,numero_jogo,fase,grupo,data_hora_inicio,time_a,codigo_a,time_b,codigo_b,estadio,cidade,pais_sede,status,placar_a,placar_b,palpites_encerrados,premio_descricao,premio_imagem_url,envolve_brasil";
