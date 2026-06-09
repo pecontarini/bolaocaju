@@ -84,19 +84,9 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
         setSlug(q);
         return;
       }
-      const host = url.hostname.toLowerCase();
-      const ehPreview =
-        host === "localhost" ||
-        host === "127.0.0.1" ||
-        host.endsWith(".lovable.app") ||
-        host.endsWith(".lovableproject.com");
-      if (!ehPreview) {
-        const partes = host.split(".");
-        if (partes.length >= 3 && partes[0] !== "www") {
-          setSlug(partes[0]);
-          return;
-        }
-      }
+      // Em domínios reais a marca é resolvida por hostname dentro de
+      // useMarcaAtual (coluna marcas.dominio). Aqui só mantemos o slug
+      // default para preview/localhost sem ?marca=.
       setSlug("caju-limao");
     }
     syncSlug();
