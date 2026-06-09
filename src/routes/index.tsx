@@ -166,8 +166,9 @@ function AbaVisaoGeral() {
     const id = setInterval(() => setHoje(new Date()), 60_000);
     return () => clearInterval(id);
   }, []);
-  const antes = hoje < COPA_INICIO;
-  const durante = hoje >= COPA_INICIO && hoje <= COPA_FIM;
+  const antes = !!hoje && hoje < COPA_INICIO;
+  const durante = !!hoje && hoje >= COPA_INICIO && hoje <= COPA_FIM;
+  const depois = !!hoje && hoje > COPA_FIM;
   const diasFaltam = Math.max(
     0,
     hoje ? differenceInCalendarDays(COPA_INICIO, hoje) : 0,
