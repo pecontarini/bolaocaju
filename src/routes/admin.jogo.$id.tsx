@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminSession } from "@/lib/admin/auth";
+import { useMarcaId } from "@/lib/marca";
 import type { Jogo } from "@/lib/jogos";
 import { formatarReais } from "@/lib/formato";
 import {
@@ -65,6 +66,8 @@ type Ganhador = {
   nome: string | null;
   telefone: string | null;
   comanda: number | null;
+  placar_a?: number | null;
+  placar_b?: number | null;
 };
 
 function DetalheJogoPage() {
@@ -72,6 +75,7 @@ function DetalheJogoPage() {
   const qc = useQueryClient();
   const auth = useAdminSession();
   const userId = auth.status === "in" ? auth.session.user.id : null;
+  void userId;
 
   const jogoQ = useQuery({
     queryKey: ["admin", "jogo", id],
@@ -118,29 +122,6 @@ function DetalheJogoPage() {
     };
   }, [id]);
 
-  const ganhadoresQ = useQuery({
-    queryKey: ["admin", "ganhadores", id],
-    enabled: false,
-    queryFn: async (): Promise<Ganhador[]> => {
-      const { data, error } = await supabase
-        .from("palpites")
-        .select("comanda, clientes:cliente_id(nome, telefone)")
-        .eq("jogo_id", id)
-        .eq("acertou", true)
-        .order("comanda", { ascending: true });
-      if (error) throw error;
-      type Row = {
-        comanda: number | null;
-        clientes: { nome: string | null; telefone: string | null } | null;
-      };
-      return ((data ?? []) as unknown as Row[]).map((r) => ({
-        comanda: r.comanda,
-        nome: r.clientes?.nome ?? null,
-        telefone: r.clientes?.telefone ?? null,
-      }));
-    },
-  });
-
   function invalidarTudo() {
     qc.invalidateQueries({ queryKey: ["admin", "jogo", id] });
     qc.invalidateQueries({ queryKey: ["admin", "jogos-todos"] });
@@ -184,8 +165,6 @@ function DetalheJogoPage() {
     jogo.status === "ativo" || jogo.status === "palpites_encerrados";
   const placarLancado = jogo.placar_a !== null && jogo.placar_b !== null;
   const jaEncerrado = jogo.status === "encerrado";
-  const podeApurar = placarLancado && !jaEncerrado;
-  const mostrarGanhadores = jaEncerrado || (ganhadoresQ.data != null);
 
   return (
     <>
@@ -271,18 +250,7 @@ function DetalheJogoPage() {
           />
         )}
 
-        {podeApurar && (
-          <AcaoApurar
-            jogo={jogo}
-            userId={userId}
-            onApurado={(lista) => {
-              qc.setQueryData(["admin", "ganhadores", id], lista);
-              invalidarTudo();
-            }}
-          />
-        )}
-
-        {mostrarGanhadores && <CardGanhadores jogo={jogo} />}
+        <CardGanhadores jogo={jogo} />
 
         {(placarLancado || jaEncerrado) && <CardInvestimento jogoId={jogo.id} />}
 
@@ -832,24 +800,30 @@ function AcaoApurar({
 }
 
 function CardGanhadores({ jogo }: { jogo: Jogo }) {
+  const marcaId = useMarcaId();
+  const jaEncerrado = jogo.status === "encerrado";
   const q = useQuery({
-    queryKey: ["admin", "ganhadores", jogo.id],
+    queryKey: ["admin", "ganhadores", marcaId, jogo.id],
+    enabled: !!marcaId && jaEncerrado,
     queryFn: async (): Promise<Ganhador[]> => {
-      const { data, error } = await supabase
-        .from("palpites")
-        .select("comanda, clientes:cliente_id(nome, telefone)")
-        .eq("jogo_id", jogo.id)
-        .eq("acertou", true)
-        .order("comanda", { ascending: true });
+      const { data, error } = await supabase.rpc("fn_ganhadores", {
+        p_marca_id: marcaId!,
+        p_jogo_id: jogo.id,
+      });
       if (error) throw error;
       type Row = {
+        nome: string | null;
+        telefone: string | null;
         comanda: number | null;
-        clientes: { nome: string | null; telefone: string | null } | null;
+        placar_a: number | null;
+        placar_b: number | null;
       };
       return ((data ?? []) as unknown as Row[]).map((r) => ({
-        comanda: r.comanda,
-        nome: r.clientes?.nome ?? null,
-        telefone: r.clientes?.telefone ?? null,
+        nome: r.nome ?? null,
+        telefone: r.telefone ?? null,
+        comanda: r.comanda ?? null,
+        placar_a: r.placar_a ?? null,
+        placar_b: r.placar_b ?? null,
       }));
     },
   });
@@ -858,6 +832,7 @@ function CardGanhadores({ jogo }: { jogo: Jogo }) {
   const comandasDistintas = new Set(
     lista.map((g) => g.comanda).filter((c): c is number => c != null),
   ).size;
+  const tituloJogo = `${jogo.codigo_a ?? jogo.time_a} × ${jogo.codigo_b ?? jogo.time_b}`;
 
   return (
     <section
@@ -873,32 +848,62 @@ function CardGanhadores({ jogo }: { jogo: Jogo }) {
         <div className="text-center">
           <Trophy className="size-8 text-cl-laranja mx-auto" />
           <p className="text-[11px] uppercase tracking-widest text-cl-cinza-texto mt-2">
-            Ganhadores — 1 chopp por comanda
+            Ganhadores — {tituloJogo}
           </p>
           <h3 className="font-display text-cl-verde-escuro text-2xl mt-1">
-            {jogo.placar_a}×{jogo.placar_b} no tempo regular
+            {jaEncerrado && jogo.placar_a !== null && jogo.placar_b !== null
+              ? `${jogo.placar_a}×${jogo.placar_b} no tempo regular`
+              : "Aguardando resultado"}
           </h3>
+          {jaEncerrado && (
+            <p className="text-[11px] uppercase tracking-wider text-cl-cinza-texto mt-2">
+              {lista.length}{" "}
+              {lista.length === 1 ? "comanda acertou" : "comandas acertaram"}
+            </p>
+          )}
+          {jaEncerrado && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => q.refetch()}
+              disabled={q.isFetching}
+              className="mt-3"
+            >
+              {q.isFetching ? (
+                <>
+                  <Loader2 className="size-4 mr-2 animate-spin" /> Atualizando…
+                </>
+              ) : (
+                "Atualizar"
+              )}
+            </Button>
+          )}
         </div>
 
-        {q.isLoading ? (
+        {!jaEncerrado ? (
+          <p className="mt-6 text-center text-sm text-cl-cinza-texto">
+            Aguardando resultado do jogo.
+          </p>
+        ) : q.isLoading ? (
           <div className="mt-6 text-center text-cl-cinza-texto text-sm">
             <Loader2 className="size-5 mx-auto animate-spin text-cl-verde" />
           </div>
+        ) : q.error ? (
+          <p className="mt-6 text-center text-sm text-cl-aviso">
+            Não consegui carregar os ganhadores agora.
+          </p>
         ) : lista.length === 0 ? (
           <p className="mt-6 text-center text-sm text-cl-verde-escuro">
-            Ninguém acertou o placar. Sem ganhadores neste jogo.
+            Ninguém acertou o placar exato neste jogo.
           </p>
         ) : (
           <>
             <div className="mt-5 rounded-2xl bg-cl-laranja text-cl-verde-escuro px-4 py-3 text-center">
               <p className="text-[10px] uppercase tracking-widest font-semibold">
-                Chopps a servir
+                Comandas ganhadoras
               </p>
               <p className="font-display text-4xl tabular-nums leading-none mt-1">
                 {comandasDistintas}
-              </p>
-              <p className="text-[11px] mt-1">
-                {comandasDistintas === 1 ? "comanda ganhadora" : "comandas ganhadoras"}
               </p>
             </div>
 
@@ -924,6 +929,11 @@ function CardGanhadores({ jogo }: { jogo: Jogo }) {
                       {mascararTelefoneBR(g.telefone)}
                     </p>
                   </div>
+                  {g.placar_a !== null && g.placar_b !== null && (
+                    <div className="shrink-0 rounded-lg bg-cl-verde/10 text-cl-verde-escuro px-2 py-1 font-display tabular-nums text-base">
+                      {g.placar_a}×{g.placar_b}
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
