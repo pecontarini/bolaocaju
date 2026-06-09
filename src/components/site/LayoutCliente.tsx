@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { HeaderCliente } from "./HeaderCliente";
+import { FaixaPatrocinio } from "./FaixaPatrocinio";
 
 export function LayoutCliente({ children }: { children: ReactNode }) {
   return (
@@ -21,6 +22,7 @@ export function LayoutCliente({ children }: { children: ReactNode }) {
           </a>
         </p>
       </footer>
+      <FaixaPatrocinio />
     </div>
   );
 }

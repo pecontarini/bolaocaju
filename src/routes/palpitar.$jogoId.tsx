@@ -12,6 +12,7 @@ import { type Jogo } from "@/lib/jogos";
 import { Bandeira } from "@/components/jogos/Bandeira";
 import { useJogosRealtime } from "@/hooks/useJogosRealtime";
 import { useMarcaAtual } from "@/lib/marca";
+import { usePatrocinador } from "@/components/site/FaixaPatrocinio";
 
 const COLUNAS =
   "id,numero_jogo,fase,grupo,data_hora_inicio,time_a,codigo_a,time_b,codigo_b,estadio,cidade,pais_sede,status,placar_a,placar_b,palpites_encerrados,premio_descricao,premio_imagem_url,envolve_brasil";
@@ -31,6 +32,7 @@ function PalpitarJogoPage() {
   const { jogoId } = Route.useParams();
   const navigate = useNavigate();
   const { marca } = useMarcaAtual();
+  const patrocinador = usePatrocinador();
   const cliente_id = useCliente((s) => s.cliente_id);
   const nome = useCliente((s) => s.nome);
   const setUltimoPalpite = useCliente((s) => s.setUltimoPalpite);
@@ -292,6 +294,17 @@ function PalpitarJogoPage() {
             </p>
             <p className="text-sm text-cl-verde-escuro font-medium">
               {jogo.premio_descricao}
+            </p>
+          </div>
+        )}
+
+        {patrocinador?.texto_premio && (
+          <div className="mx-4 mb-4 rounded-xl bg-cl-verde-escuro text-white p-3 text-center shadow-sm">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-white/80 font-semibold">
+              Prêmio
+            </p>
+            <p className="text-base font-bold mt-0.5">
+              {patrocinador.texto_premio}
             </p>
           </div>
         )}

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useAdminSession, signOutAdmin } from "@/lib/admin/auth";
 import { Button } from "@/components/ui/button";
 import { useBranding } from "@/lib/marca";
+import { FaixaPatrocinio } from "@/components/site/FaixaPatrocinio";
 import {
   Sheet,
   SheetContent,
@@ -59,6 +60,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
           </a>
         </p>
       </footer>
+      <FaixaPatrocinio />
     </div>
   );
 }
