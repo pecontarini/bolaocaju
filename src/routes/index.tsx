@@ -687,53 +687,6 @@ function CardJogoAbertoPalpite({
   );
 }
 
-function EscolhaUnidadeDialog({
-  aberto,
-  onMudou,
-}: {
-  aberto: boolean;
-  onMudou: (v: boolean) => void;
-}) {
-  function abrir(url: string) {
-    onMudou(false);
-    window.open(url, "_blank", "noopener,noreferrer");
-  }
-  return (
-    <Dialog open={aberto} onOpenChange={onMudou}>
-      <DialogContent className="max-w-sm rounded-3xl">
-        <DialogHeader>
-          <DialogTitle className="font-display text-cl-verde-escuro text-xl">
-            Escolha sua unidade
-          </DialogTitle>
-          <DialogDescription>
-            O cardápio abrirá em uma nova aba.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-3 mt-2">
-          <button
-            type="button"
-            onClick={() => abrir(CARDAPIO.brasilia)}
-            className="w-full text-left p-4 rounded-2xl border border-cl-verde/20 bg-white hover:bg-cl-verde/5 transition-colors"
-          >
-            <p className="font-semibold text-cl-verde-escuro">Brasília</p>
-            <p className="text-xs text-cl-cinza-texto mt-0.5">
-              Asa Norte / Sudoeste
-            </p>
-          </button>
-          <button
-            type="button"
-            onClick={() => abrir(CARDAPIO.saoPaulo)}
-            className="w-full text-left p-4 rounded-2xl border border-cl-verde/20 bg-white hover:bg-cl-verde/5 transition-colors"
-          >
-            <p className="font-semibold text-cl-verde-escuro">São Paulo</p>
-            <p className="text-xs text-cl-cinza-texto mt-0.5">Itaim</p>
-          </button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 /* =============================================================== */
 /*                        ABA 2 — PARTIDAS                          */
 /* =============================================================== */
