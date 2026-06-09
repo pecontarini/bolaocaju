@@ -62,8 +62,8 @@ export function FaixaPatrocinio() {
   );
 
   return (
-    <div className="bg-white border-t border-neutral-200">
-      <div className="mx-auto max-w-[480px] px-4 py-3 flex items-center justify-center">
+    <div className="bg-white border-b border-neutral-200">
+      <div className="mx-auto max-w-[480px] px-4 py-2 flex items-center justify-center">
         {patrocinador.link ? (
           <a
             href={patrocinador.link}
