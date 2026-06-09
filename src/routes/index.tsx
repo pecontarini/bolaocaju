@@ -357,7 +357,7 @@ function AbaVisaoGeral() {
           </div>
         )}
 
-        {!antes && !durante && (
+        {depois && (
           <div className="text-center">
             <p className="font-display text-xl text-cl-verde-escuro">
               Copa encerrada
