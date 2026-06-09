@@ -84,22 +84,23 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
         setSlug(q);
         return;
       }
-      // Em domínios reais a marca é resolvida por hostname dentro de
-      // useMarcaAtual (coluna marcas.dominio). Aqui só mantemos o slug
-      // default para preview/localhost sem ?marca=.
-      setSlug("caju-limao");
+      // Não fixa Caju no boot: deixa useMarcaAtual resolver por hostname
+      // e só cair no default depois da consulta async falhar.
+      setSlug(null);
     }
     syncSlug();
     window.addEventListener("popstate", syncSlug);
     return () => window.removeEventListener("popstate", syncSlug);
   }, [setSlug]);
 
-  const { marca, slug } = useMarcaAtual();
+  const { marca, slug, isLoading } = useMarcaAtual();
 
   useEffect(() => {
     if (!marca) return;
     aplicarBranding(marca.slug, marca.branding ?? {});
   }, [marca, slug]);
+
+  if (isLoading || !marca) return null;
 
   return <>{children}</>;
 }
