@@ -292,8 +292,8 @@ function AbaVisaoGeral() {
           }}
         />
         <LogoMarca
-          imgClassName="mx-auto h-[180px] w-auto max-w-[320px] object-contain"
-          fallbackClassName="block mx-auto font-display text-4xl font-bold text-cl-verde-escuro"
+          imgClassName="mx-auto h-[156px] w-auto max-w-[280px] object-contain"
+          fallbackClassName="block mx-auto font-display text-3xl font-bold text-cl-verde-escuro"
         />
         <p className="mt-4 font-display text-2xl font-semibold text-cl-verde-escuro leading-tight">
           Bolão
