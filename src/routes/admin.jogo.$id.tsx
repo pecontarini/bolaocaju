@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminSession } from "@/lib/admin/auth";
+import { useMarcaId } from "@/lib/marca";
 import type { Jogo } from "@/lib/jogos";
 import { formatarReais } from "@/lib/formato";
 import {
@@ -65,6 +66,8 @@ type Ganhador = {
   nome: string | null;
   telefone: string | null;
   comanda: number | null;
+  placar_a?: number | null;
+  placar_b?: number | null;
 };
 
 function DetalheJogoPage() {
@@ -72,6 +75,7 @@ function DetalheJogoPage() {
   const qc = useQueryClient();
   const auth = useAdminSession();
   const userId = auth.status === "in" ? auth.session.user.id : null;
+  void userId;
 
   const jogoQ = useQuery({
     queryKey: ["admin", "jogo", id],
@@ -118,29 +122,6 @@ function DetalheJogoPage() {
     };
   }, [id]);
 
-  const ganhadoresQ = useQuery({
-    queryKey: ["admin", "ganhadores", id],
-    enabled: false,
-    queryFn: async (): Promise<Ganhador[]> => {
-      const { data, error } = await supabase
-        .from("palpites")
-        .select("comanda, clientes:cliente_id(nome, telefone)")
-        .eq("jogo_id", id)
-        .eq("acertou", true)
-        .order("comanda", { ascending: true });
-      if (error) throw error;
-      type Row = {
-        comanda: number | null;
-        clientes: { nome: string | null; telefone: string | null } | null;
-      };
-      return ((data ?? []) as unknown as Row[]).map((r) => ({
-        comanda: r.comanda,
-        nome: r.clientes?.nome ?? null,
-        telefone: r.clientes?.telefone ?? null,
-      }));
-    },
-  });
-
   function invalidarTudo() {
     qc.invalidateQueries({ queryKey: ["admin", "jogo", id] });
     qc.invalidateQueries({ queryKey: ["admin", "jogos-todos"] });
@@ -184,8 +165,6 @@ function DetalheJogoPage() {
     jogo.status === "ativo" || jogo.status === "palpites_encerrados";
   const placarLancado = jogo.placar_a !== null && jogo.placar_b !== null;
   const jaEncerrado = jogo.status === "encerrado";
-  const podeApurar = placarLancado && !jaEncerrado;
-  const mostrarGanhadores = jaEncerrado || (ganhadoresQ.data != null);
 
   return (
     <>
@@ -271,18 +250,7 @@ function DetalheJogoPage() {
           />
         )}
 
-        {podeApurar && (
-          <AcaoApurar
-            jogo={jogo}
-            userId={userId}
-            onApurado={(lista) => {
-              qc.setQueryData(["admin", "ganhadores", id], lista);
-              invalidarTudo();
-            }}
-          />
-        )}
-
-        {mostrarGanhadores && <CardGanhadores jogo={jogo} />}
+        <CardGanhadores jogo={jogo} />
 
         {(placarLancado || jaEncerrado) && <CardInvestimento jogoId={jogo.id} />}
 
