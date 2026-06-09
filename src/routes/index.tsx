@@ -261,7 +261,41 @@ function AbaVisaoGeral() {
     },
   });
 
-  const [cardapioAberto, setCardapioAberto] = useState(false);
+  async function abrirCardapio() {
+    const fallback = marca?.branding?.cardapio_url;
+    const openFallback = () => {
+      if (fallback) window.open(fallback, "_blank", "noopener,noreferrer");
+      else toast.error("Cardápio indisponível no momento.");
+    };
+    if (!marca?.id || typeof navigator === "undefined" || !("geolocation" in navigator)) {
+      openFallback();
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { data, error } = await supabase.rpc("fn_cardapio_por_geo", {
+            p_lat: pos.coords.latitude,
+            p_lon: pos.coords.longitude,
+            p_marca_id: marca.id,
+          });
+          if (error) {
+            console.error(error);
+            openFallback();
+            return;
+          }
+          const url = (data as string | null) ?? fallback;
+          if (url) window.open(url, "_blank", "noopener,noreferrer");
+          else toast.error("Cardápio indisponível no momento.");
+        } catch (e) {
+          console.error(e);
+          openFallback();
+        }
+      },
+      () => openFallback(),
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 },
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -426,7 +460,7 @@ function AbaVisaoGeral() {
 
         <button
           type="button"
-          onClick={() => setCardapioAberto(true)}
+          onClick={abrirCardapio}
           className="glass rounded-2xl p-4 flex items-center gap-3 card-press text-left"
         >
           <span className="size-10 rounded-full bg-cl-laranja/20 flex items-center justify-center text-cl-verde-escuro">
@@ -437,18 +471,13 @@ function AbaVisaoGeral() {
               Cardápio
             </span>
             <span className="block text-xs text-cl-cinza-texto">
-              Escolha a unidade {nomeExibicao}
+              Abre o cardápio da unidade {nomeExibicao}
             </span>
           </span>
           <ChevronRight className="size-5 text-cl-cinza-texto" />
         </button>
         </div>
       </section>
-
-      <EscolhaUnidadeDialog
-        aberto={cardapioAberto}
-        onMudou={setCardapioAberto}
-      />
     </div>
   );
 }
