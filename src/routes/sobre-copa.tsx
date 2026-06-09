@@ -13,6 +13,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useJogosRealtime } from "@/hooks/useJogosRealtime";
+import { LogoMarca } from "@/components/site/LogoMarca";
 
 export const Route = createFileRoute("/sobre-copa")({
   head: () => ({
@@ -96,14 +97,12 @@ function SobreCopa() {
           }}
         />
         <div className="relative p-6 text-center">
-          <img
-            src="/assets/05-logo-com-adornos-emblema.png"
-            alt=""
-            className="mx-auto h-24 w-auto"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).style.display = "none";
-            }}
-          />
+          <div className="flex justify-center">
+            <LogoMarca
+              imgClassName="mx-auto h-24 w-auto object-contain"
+              fallbackClassName="font-display text-cl-verde-escuro text-2xl"
+            />
+          </div>
           <p className="mt-3 text-[10px] uppercase tracking-[0.2em] text-cl-cinza-texto">
             FIFA World Cup
           </p>

@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { LayoutCliente } from "@/components/site/LayoutCliente";
 import { useCliente } from "@/store/cliente";
+import { LogoMarca } from "@/components/site/LogoMarca";
 
 export const Route = createFileRoute("/confirmacao")({
   component: ConfirmacaoPage,
@@ -29,10 +30,9 @@ function ConfirmacaoPage() {
       }}
     >
       <main className="mx-auto max-w-[480px] px-5 py-10 flex flex-col items-center text-center min-h-screen">
-        <img
-          src="/assets/08-selo-circular-verde.png"
-          alt=""
-          className="size-44 md:size-48 drop-shadow-md"
+        <LogoMarca
+          imgClassName="size-44 md:size-48 object-contain drop-shadow-md"
+          fallbackClassName="font-display text-cl-verde-escuro text-3xl"
         />
         <h1 className="font-display text-cl-verde-escuro text-3xl mt-6">
           Palpite registrado!
