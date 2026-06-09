@@ -39,7 +39,7 @@ export function LogoMarca({
       ? `"${marca.branding.fonte_display}", serif`
       : "var(--brand-font-display)";
 
-  if (typeof window !== "undefined") {
+  if (import.meta.env.DEV && typeof window !== "undefined") {
     // eslint-disable-next-line no-console
     console.log("LOGO URL:", logoUrl);
   }
