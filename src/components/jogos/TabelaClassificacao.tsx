@@ -121,14 +121,6 @@ export function TabelaClassificacao({ grupo, linhas, className = "" }: Props) {
 export function HeaderClassificacao({ titulo = "Classificação" }: { titulo?: string }) {
   return (
     <div className="flex items-center gap-2 mb-3">
-      <img
-        src="/assets/08-selo-circular-verde.png"
-        alt=""
-        className="h-6 w-6"
-        onError={(e) => {
-          (e.currentTarget as HTMLImageElement).style.display = "none";
-        }}
-      />
       <p className="secao-titulo">{titulo}</p>
     </div>
   );

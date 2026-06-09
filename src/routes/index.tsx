@@ -485,14 +485,6 @@ function AbaVisaoGeral() {
 function HeaderSecao({ titulo }: { titulo: string }) {
   return (
     <div className="flex items-center gap-2 mb-2.5 px-0.5">
-      <img
-        src="/assets/08-selo-circular-verde.png"
-        alt=""
-        className="h-5 w-5"
-        onError={(e) => {
-          (e.currentTarget as HTMLImageElement).style.display = "none";
-        }}
-      />
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cl-verde-escuro">
         {titulo}
       </p>
