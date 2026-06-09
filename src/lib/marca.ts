@@ -25,24 +25,21 @@ export type Marca = {
 };
 
 /**
- * Resolve o slug da marca atual:
- *  1. subdomínio (caminito.boteco.app -> "caminito")
- *  2. ?marca=<slug>
- *  3. default 'caju-limao'
- * Hostnames de preview da Lovable e localhost caem direto na query/default.
+ * Resolve apenas o slug pedido por querystring.
+ * A marca real é resolvida assincronamente por hostname antes de qualquer default.
  */
-export function resolverSlugMarca(): string {
-  if (typeof window === "undefined") return SLUG_DEFAULT;
+export function resolverSlugMarca(): string | null {
+  if (typeof window === "undefined") return null;
   const url = new URL(window.location.href);
   const queryMarca = url.searchParams.get("marca")?.trim().toLowerCase();
   if (queryMarca && /^[a-z0-9-]+$/.test(queryMarca)) return queryMarca;
-  return SLUG_DEFAULT;
+  return null;
 }
 
 type MarcaStore = {
-  slug: string;
+  slug: string | null;
   marca: Marca | null;
-  setSlug: (s: string) => void;
+  setSlug: (s: string | null) => void;
   setMarca: (m: Marca | null) => void;
 };
 
@@ -64,70 +61,63 @@ export function useMarcaAtual() {
     typeof window === "undefined"
       ? ""
       : window.location.hostname.toLowerCase();
-  const ehPreviewHost =
-    !host ||
-    host === "localhost" ||
-    host === "127.0.0.1" ||
-    host.endsWith(".lovable.app") ||
-    host.endsWith(".lovableproject.com");
-
   const q = useQuery({
     queryKey: ["marca", host, slug],
     queryFn: async (): Promise<Marca> => {
-      // 1) Resolução por hostname real (domínios de produção).
-      if (!ehPreviewHost) {
-        const { data: porDominio, error: errDom } = await supabase
+      let marca: Marca | null = null;
+
+      // a) Resolução prioritária por hostname.
+      if (host) {
+        const { data: porDominio, error } = await supabase
           .from("marcas")
-          .select("id, slug, nome, branding")
+          .select("*")
           .eq("dominio", host)
-          .eq("ativo", true)
           .maybeSingle();
-        if (errDom) throw errDom;
-        if (porDominio) {
-          const m = porDominio as Marca;
-          // eslint-disable-next-line no-console
-          console.log("HOST:", host, "| marca:", m.slug);
-          setMarca(m);
-          setSlug(m.slug);
-          return m;
+        if (error) throw error;
+        if (porDominio) marca = porDominio as Marca;
+      }
+
+      // b) Fallback por querystring/preview/dev.
+      if (!marca) {
+        const slugQuery =
+          typeof window === "undefined"
+            ? slug
+            : new URLSearchParams(window.location.search).get("marca")?.trim().toLowerCase() ?? slug;
+        if (slugQuery && /^[a-z0-9-]+$/.test(slugQuery)) {
+          const { data, error } = await supabase
+            .from("marcas")
+            .select("*")
+            .eq("slug", slugQuery)
+            .maybeSingle();
+          if (error) throw error;
+          if (data) marca = data as Marca;
         }
       }
 
-      // 2) Resolução por slug (querystring / default).
-      const { data, error } = await supabase
-        .from("marcas")
-        .select("id, slug, nome, branding")
-        .eq("slug", slug)
-        .eq("ativo", true)
-        .maybeSingle();
-      if (error) throw error;
-      if (!data) {
-        // fallback para a marca default se o slug pedido não existir
-        const def = await supabase
+      // c) Default somente depois de hostname e querystring falharem.
+      if (!marca) {
+        const { data, error } = await supabase
           .from("marcas")
-          .select("id, slug, nome, branding")
+          .select("*")
           .eq("slug", SLUG_DEFAULT)
           .maybeSingle();
-        if (def.error) throw def.error;
-        if (!def.data) throw new Error("Marca default não encontrada");
-        const m = def.data as Marca;
-        // eslint-disable-next-line no-console
-        console.log("HOST:", host, "| marca:", m.slug, "(fallback default)");
-        setMarca(m);
-        return m;
+        if (error) throw error;
+        if (!data) throw new Error("Marca default não encontrada");
+        marca = data as Marca;
       }
-      const m = data as Marca;
+
       // eslint-disable-next-line no-console
-      console.log("HOST:", host, "| marca:", m.slug);
-      setMarca(m);
-      return m;
+      console.log("HOST:", host, "| marca:", marca?.slug);
+      setMarca(marca);
+      setSlug(marca.slug);
+      return marca;
     },
     staleTime: 60_000 * 5,
     refetchOnWindowFocus: false,
   });
 
   return {
-    slug,
+    slug: q.data?.slug ?? marcaGuardada?.slug ?? slug ?? SLUG_DEFAULT,
     marca: q.data ?? marcaGuardada,
     isLoading: q.isLoading,
     error: q.error,
