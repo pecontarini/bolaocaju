@@ -246,7 +246,7 @@ function PalpitarJogoPage() {
         <ArrowLeft className="size-4" /> Jogos abertos
       </Link>
 
-      <div className="flex items-start justify-between mb-2">
+      <div className="mb-2">
         <div>
           <p className="text-xs text-cl-cinza-texto uppercase tracking-wide">
             Olá,
@@ -255,11 +255,6 @@ function PalpitarJogoPage() {
             {nome}
           </p>
         </div>
-        <img
-          src="/assets/09-selo-laranja.png"
-          alt="É a hora!"
-          className="size-14 sm:size-20 -mt-1 -mr-1 shrink-0"
-        />
       </div>
 
       <p className="font-display text-cl-laranja text-xl sm:text-2xl mb-4">É a hora!</p>
