@@ -19,6 +19,7 @@ import {
 
 import { AdminShell, PageHeader } from "@/components/admin/AdminShell";
 import { Bandeira } from "@/components/jogos/Bandeira";
+import { UnidadeFiltro } from "@/components/admin/UnidadeFiltro";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -801,14 +802,16 @@ function AcaoApurar({
 
 function CardGanhadores({ jogo }: { jogo: Jogo }) {
   const marcaId = useMarcaId();
+  const [unidadeId, setUnidadeId] = useState<string | null>(null);
   const jaEncerrado = jogo.status === "encerrado";
   const q = useQuery({
-    queryKey: ["admin", "ganhadores", marcaId, jogo.id],
+    queryKey: ["admin", "ganhadores", marcaId, jogo.id, unidadeId],
     enabled: !!marcaId && jaEncerrado,
     queryFn: async (): Promise<Ganhador[]> => {
       const { data, error } = await supabase.rpc("fn_ganhadores", {
         p_marca_id: marcaId!,
         p_jogo_id: jogo.id,
+        p_unidade_id: unidadeId,
       });
       if (error) throw error;
       type Row = {
@@ -879,6 +882,12 @@ function CardGanhadores({ jogo }: { jogo: Jogo }) {
             </Button>
           )}
         </div>
+
+        {jaEncerrado && (
+          <div className="mt-4">
+            <UnidadeFiltro value={unidadeId} onChange={setUnidadeId} />
+          </div>
+        )}
 
         {!jaEncerrado ? (
           <p className="mt-6 text-center text-sm text-cl-cinza-texto">
