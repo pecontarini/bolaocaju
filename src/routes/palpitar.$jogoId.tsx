@@ -11,8 +11,7 @@ import { useCliente } from "@/store/cliente";
 import { type Jogo } from "@/lib/jogos";
 import { Bandeira } from "@/components/jogos/Bandeira";
 import { useJogosRealtime } from "@/hooks/useJogosRealtime";
-import { useMarcaAtual } from "@/lib/marca";
-import { useUsarTexturas } from "@/lib/marca";
+import { useMarcaAtual, useUsarTexturas } from "@/lib/marca";
 import { usePatrocinador } from "@/components/site/FaixaPatrocinio";
 
 const COLUNAS =
