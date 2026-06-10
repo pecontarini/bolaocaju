@@ -5,8 +5,9 @@ import { FaixaPatrocinio } from "./FaixaPatrocinio";
 export function LayoutCliente({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen">
+      <FaixaPatrocinio posicao="topo" />
       <HeaderCliente />
-      <main className="mx-auto max-w-[480px] px-4 pt-3 pb-[calc(6rem+env(safe-area-inset-bottom))]">
+      <main className="mx-auto max-w-[480px] px-4 pt-[calc(3rem+3px)] pb-[calc(6rem+env(safe-area-inset-bottom))]">
         {children}
       </main>
       <footer className="mx-auto max-w-[480px] px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] text-center">
@@ -26,3 +27,4 @@ export function LayoutCliente({ children }: { children: ReactNode }) {
     </div>
   );
 }
+
