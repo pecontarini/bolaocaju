@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { AdminShell, PageHeader } from "@/components/admin/AdminShell";
+import { useUsarTexturas } from "@/lib/marca";
 import { Bandeira } from "@/components/jogos/Bandeira";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
