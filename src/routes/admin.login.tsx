@@ -36,8 +36,8 @@ function AdminLoginPage() {
       email: email.trim(),
       password: senha,
     });
-    setLoading(false);
     if (error) {
+      setLoading(false);
       const m = (error.message || "").toLowerCase();
       if (m.includes("invalid") || m.includes("credenti")) {
         toast.error("Email ou senha inválidos.");
@@ -48,6 +48,16 @@ function AdminLoginPage() {
       }
       return;
     }
+    // Confere se o usuário tem perfil (loja) vinculado.
+    const { data: perfil, error: perfilErr } = await supabase.rpc("fn_meu_perfil");
+    const p = (perfil as Array<unknown> | null)?.[0] ?? null;
+    if (perfilErr || !p) {
+      await supabase.auth.signOut();
+      setLoading(false);
+      toast.error("Usuário sem loja vinculada. Procure o administrador.");
+      return;
+    }
+    setLoading(false);
     toast.success("Bem-vindo!");
     navigate({ to: "/admin", replace: true });
   }
