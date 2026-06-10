@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Bandeira } from "@/components/jogos/Bandeira";
 import type { Jogo } from "@/lib/jogos";
+import { useUsarTexturas } from "@/lib/marca";
 
 const FASE_LABEL: Record<string, string> = {
   fase_grupos: "Fase de grupos",
@@ -33,6 +34,7 @@ function diff(ms: number) {
 
 export function BannerCopa({ proximo, encerrados }: Props) {
   const [agora, setAgora] = useState(() => Date.now());
+  const usarTexturas = useUsarTexturas();
 
   useEffect(() => {
     const id = setInterval(() => setAgora(Date.now()), 1000);
@@ -52,16 +54,18 @@ export function BannerCopa({ proximo, encerrados }: Props) {
       aria-label="Status da Copa"
       className="relative overflow-hidden rounded-3xl bg-white border border-border shadow-sm"
     >
-      <div
-        aria-hidden
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage: "url('/assets/16-textura-geometrica.png')",
-          backgroundRepeat: "repeat",
-          backgroundSize: "260px",
-          opacity: 0.06,
-        }}
-      />
+      {usarTexturas && (
+        <div
+          aria-hidden
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: "url('/assets/16-textura-geometrica.png')",
+            backgroundRepeat: "repeat",
+            backgroundSize: "260px",
+            opacity: 0.06,
+          }}
+        />
+      )}
       <div className="relative p-5 sm:p-7">
         <div className="flex items-start gap-3">
           <Trophy

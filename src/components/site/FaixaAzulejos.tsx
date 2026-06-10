@@ -1,4 +1,8 @@
+import { useUsarTexturas } from "@/lib/marca";
+
 export function FaixaAzulejos({ className = "" }: { className?: string }) {
+  const usarTexturas = useUsarTexturas();
+  if (!usarTexturas) return null;
   return (
     <div
       role="presentation"

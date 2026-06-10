@@ -48,6 +48,13 @@ function aplicarBranding(slug: string, branding: Branding) {
   // Marcador para CSS específico por marca, se necessário.
   root.dataset.marca = slug;
 
+  // Liga/desliga texturas globais (body::before) por marca.
+  if (typeof document !== "undefined") {
+    const usarTexturas =
+      (branding as { usar_texturas?: boolean }).usar_texturas === true;
+    document.body.dataset.texturas = usarTexturas ? "on" : "off";
+  }
+
   // Fonte display por marca — vem sempre de branding.fonte_display.
   // Fallback genérico caso o banco não tenha preenchido.
   const fonteRaw = (branding.fonte_display ?? "").trim();

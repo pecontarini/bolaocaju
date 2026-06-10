@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { AdminShell, PageHeader } from "@/components/admin/AdminShell";
+import { useUsarTexturas } from "@/lib/marca";
 import { Bandeira } from "@/components/jogos/Bandeira";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -804,6 +805,7 @@ function AcaoApurar({
 function CardGanhadores({ jogo }: { jogo: Jogo }) {
   const perfilQ = usePerfilAdmin();
   const perfil = perfilQ.data ?? null;
+  const usarTexturas = useUsarTexturas();
   const jaEncerrado = jogo.status === "encerrado";
   const q = useQuery({
     queryKey: ["admin", "meus-ganhadores", jogo.id, perfil?.papel ?? null, perfil?.unidade_id ?? null],
@@ -859,12 +861,16 @@ function CardGanhadores({ jogo }: { jogo: Jogo }) {
   return (
     <section
       className="rounded-3xl overflow-hidden relative glass"
-      style={{
-        backgroundImage:
-          "linear-gradient(180deg, color-mix(in oklab, white 78%, transparent), color-mix(in oklab, white 92%, transparent)), url('/assets/15-textura-floral.png')",
-        backgroundSize: "cover, 220px",
-        backgroundRepeat: "no-repeat, repeat",
-      }}
+      style={
+        usarTexturas
+          ? {
+              backgroundImage:
+                "linear-gradient(180deg, color-mix(in oklab, white 78%, transparent), color-mix(in oklab, white 92%, transparent)), url('/assets/15-textura-floral.png')",
+              backgroundSize: "cover, 220px",
+              backgroundRepeat: "no-repeat, repeat",
+            }
+          : undefined
+      }
     >
       <div className="p-6">
         <div className="text-center">

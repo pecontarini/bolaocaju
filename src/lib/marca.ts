@@ -6,7 +6,7 @@ export const SLUG_DEFAULT = "caju-limao";
 export const SLUGS_CONHECIDOS = ["caju-limao", "caminito", "responsa"] as const;
 export type SlugMarca = (typeof SLUGS_CONHECIDOS)[number];
 
-export type Branding = Record<string, string> & {
+export type Branding = Record<string, string | undefined> & {
   logo?: string;
   logo_branco?: string;
   icone?: string;
@@ -127,6 +127,18 @@ export function useMarcaAtual() {
 export function useMarcaId(): string | null {
   const marca = useMarcaStore((s) => s.marca);
   return marca?.id ?? null;
+}
+
+/**
+ * Indica se a marca atual deve renderizar texturas/azulejos de fundo
+ * (faixa azulejos, textura geométrica, textura floral, marca d'água).
+ * Hoje só está ativo para marcas com `branding.usar_texturas === true`
+ * (ex.: Caju Limão). Demais marcas usam fundo limpo.
+ */
+export function useUsarTexturas(): boolean {
+  const marca = useMarcaStore((s) => s.marca);
+  return (marca?.branding as { usar_texturas?: boolean } | undefined)
+    ?.usar_texturas === true;
 }
 
 /**

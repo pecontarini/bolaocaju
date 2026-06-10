@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useJogosRealtime } from "@/hooks/useJogosRealtime";
 import { LogoMarca } from "@/components/site/LogoMarca";
+import { useUsarTexturas } from "@/lib/marca";
 
 export const Route = createFileRoute("/sobre-copa")({
   head: () => ({
@@ -39,6 +40,7 @@ const NOME_PAIS: Record<string, string> = {
 
 function SobreCopa() {
   useJogosRealtime();
+  const usarTexturas = useUsarTexturas();
   const grupos = useQuery({
     queryKey: ["sobre-copa", "grupos"],
     queryFn: async () => {
@@ -86,16 +88,18 @@ function SobreCopa() {
 
       {/* Hero */}
       <section className="relative overflow-hidden rounded-3xl bg-white border border-border shadow-sm">
-        <div
-          aria-hidden
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: "url('/assets/16-textura-geometrica.png')",
-            backgroundRepeat: "repeat",
-            backgroundSize: "260px",
-            opacity: 0.07,
-          }}
-        />
+        {usarTexturas && (
+          <div
+            aria-hidden
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              backgroundImage: "url('/assets/16-textura-geometrica.png')",
+              backgroundRepeat: "repeat",
+              backgroundSize: "260px",
+              opacity: 0.07,
+            }}
+          />
+        )}
         <div className="relative p-6 text-center">
           <div className="flex justify-center">
             <LogoMarca
