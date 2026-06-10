@@ -5,9 +5,9 @@ import { ChevronDown, Trophy, Loader2 } from "lucide-react";
 
 import { AdminShell, PageHeader } from "@/components/admin/AdminShell";
 import { Bandeira } from "@/components/jogos/Bandeira";
-import { UnidadeFiltro } from "@/components/admin/UnidadeFiltro";
 import { supabase } from "@/integrations/supabase/client";
 import { useMarcaId } from "@/lib/marca";
+import { usePerfilAdmin } from "@/lib/admin/perfil";
 import {
   formatarDataHoraBR,
   mascararTelefoneBR,
@@ -35,7 +35,6 @@ type JogoEncerrado = {
 
 function GanhadoresPage() {
   const marcaId = useMarcaId();
-  const [unidadeId, setUnidadeId] = useState<string | null>(null);
   const q = useQuery({
     queryKey: ["admin", "ganhadores-jogos", marcaId],
     enabled: !!marcaId,
@@ -60,10 +59,6 @@ function GanhadoresPage() {
         subtitulo="Comandas que acertaram o placar no tempo regular."
       />
 
-      <div className="mb-4">
-        <UnidadeFiltro value={unidadeId} onChange={setUnidadeId} />
-      </div>
-
       {q.isLoading ? (
         <div className="glass rounded-2xl h-64 animate-pulse" />
       ) : !q.data || q.data.length === 0 ? (
@@ -73,7 +68,7 @@ function GanhadoresPage() {
       ) : (
         <ul className="space-y-3">
           {q.data.map((j) => (
-            <ItemJogo key={j.id} jogo={j} unidadeId={unidadeId} />
+            <ItemJogo key={j.id} jogo={j} />
           ))}
         </ul>
       )}
@@ -84,35 +79,34 @@ function GanhadoresPage() {
 type GanhadorLinha = {
   comanda: number | null;
   clientes: { nome: string | null; telefone: string | null } | null;
+  marca_slug: string | null;
+  unidade_nome: string | null;
 };
 
-function ItemJogo({
-  jogo,
-  unidadeId,
-}: {
-  jogo: JogoEncerrado;
-  unidadeId: string | null;
-}) {
+function ItemJogo({ jogo }: { jogo: JogoEncerrado }) {
   const [aberto, setAberto] = useState(false);
-  const marcaId = useMarcaId();
+  const perfilQ = usePerfilAdmin();
+  const perfil = perfilQ.data ?? null;
 
   const ganhadoresQ = useQuery({
-    queryKey: ["admin", "ganhadores", jogo.id, marcaId, unidadeId],
-    enabled: aberto && !!marcaId,
+    queryKey: ["admin", "meus-ganhadores", jogo.id, perfil?.papel ?? null, perfil?.unidade_id ?? null],
+    enabled: aberto && !!perfil,
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("fn_ganhadores", {
-        p_marca_id: marcaId!,
+      const { data, error } = await supabase.rpc("fn_meus_ganhadores", {
         p_jogo_id: jogo.id,
-        p_unidade_id: unidadeId,
       });
       if (error) throw error;
       return ((data ?? []) as Array<{
         nome: string | null;
         telefone: string | null;
         comanda: number | null;
+        marca_slug: string | null;
+        unidade_nome: string | null;
       }>).map((r) => ({
         comanda: r.comanda,
         clientes: { nome: r.nome, telefone: r.telefone },
+        marca_slug: r.marca_slug,
+        unidade_nome: r.unidade_nome,
       })) as GanhadorLinha[];
     },
   });
@@ -121,6 +115,20 @@ function ItemJogo({
   const comandasDistintas = new Set(
     lista.map((g) => g.comanda).filter((c): c is number => c != null),
   ).size;
+  const ehGeral = perfil?.papel === "admin_geral";
+  const grupos = (() => {
+    if (!ehGeral) return null;
+    const porMarca = new Map<string, Map<string, GanhadorLinha[]>>();
+    for (const g of lista) {
+      const m = g.marca_slug ?? "—";
+      const u = g.unidade_nome ?? "—";
+      if (!porMarca.has(m)) porMarca.set(m, new Map());
+      const subm = porMarca.get(m)!;
+      if (!subm.has(u)) subm.set(u, []);
+      subm.get(u)!.push(g);
+    }
+    return porMarca;
+  })();
 
   return (
     <li className="glass rounded-2xl overflow-hidden">
