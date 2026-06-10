@@ -36,7 +36,11 @@ export function usePatrocinador() {
   return q.data ?? null;
 }
 
-export function FaixaPatrocinio() {
+export function FaixaPatrocinio({
+  posicao = "topo",
+}: {
+  posicao?: "topo" | "rodape";
+}) {
   const patrocinador = usePatrocinador();
   const [falhou, setFalhou] = useState(false);
   if (!patrocinador) return null;
@@ -61,8 +65,20 @@ export function FaixaPatrocinio() {
     </div>
   );
 
+  const rodape = posicao === "rodape";
   return (
-    <div className="bg-white border-b border-neutral-200">
+    <div
+      className={
+        rodape
+          ? "fixed bottom-0 inset-x-0 z-40 bg-white border-t border-neutral-200 shadow-[0_-2px_8px_rgba(0,0,0,0.04)]"
+          : "bg-white border-b border-neutral-200"
+      }
+      style={
+        rodape
+          ? { paddingBottom: "env(safe-area-inset-bottom)" }
+          : undefined
+      }
+    >
       <div className="mx-auto max-w-[480px] px-4 py-2 flex items-center justify-center">
         {patrocinador.link ? (
           <a
