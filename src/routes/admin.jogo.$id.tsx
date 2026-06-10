@@ -918,6 +918,40 @@ function CardGanhadores({ jogo }: { jogo: Jogo }) {
           <p className="mt-6 text-center text-sm text-cl-verde-escuro">
             Ninguém acertou o placar exato neste jogo.
           </p>
+        ) : ehGeral && grupos ? (
+          <>
+            <div className="mt-5 rounded-2xl bg-cl-laranja text-cl-verde-escuro px-4 py-3 text-center">
+              <p className="text-[10px] uppercase tracking-widest font-semibold">
+                Comandas ganhadoras
+              </p>
+              <p className="font-display text-4xl tabular-nums leading-none mt-1">
+                {comandasDistintas}
+              </p>
+            </div>
+            <div className="mt-5 space-y-5">
+              {Array.from(grupos.entries()).map(([marca, porUnidade]) => (
+                <div key={marca}>
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-cl-verde-escuro font-semibold mb-2">
+                    {marca}
+                  </p>
+                  <div className="space-y-4">
+                    {Array.from(porUnidade.entries()).map(([unidade, gs]) => (
+                      <div key={`${marca}-${unidade}`}>
+                        <p className="text-[10px] uppercase tracking-wider text-cl-cinza-texto mb-1.5">
+                          {unidade}
+                        </p>
+                        <ul className="space-y-2">
+                          {gs.map((g, i) => (
+                            <LinhaGanhador key={`${g.comanda}-${i}`} g={g} />
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         ) : (
           <>
             <div className="mt-5 rounded-2xl bg-cl-laranja text-cl-verde-escuro px-4 py-3 text-center">
@@ -931,38 +965,39 @@ function CardGanhadores({ jogo }: { jogo: Jogo }) {
 
             <ul className="mt-5 space-y-2">
               {lista.map((g, i) => (
-                <li
-                  key={`${g.comanda}-${i}`}
-                  className="rounded-2xl bg-white/85 border border-cl-verde/20 p-3 flex items-center gap-3"
-                >
-                  <div className="size-16 shrink-0 rounded-xl bg-cl-verde-escuro text-white flex flex-col items-center justify-center">
-                    <span className="text-[9px] uppercase tracking-wider opacity-80">
-                      Comanda
-                    </span>
-                    <span className="font-display text-2xl leading-none tabular-nums">
-                      {g.comanda ?? "—"}
-                    </span>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-display text-cl-verde-escuro text-lg leading-tight truncate">
-                      {g.nome ?? "—"}
-                    </p>
-                    <p className="text-xs text-cl-cinza-texto">
-                      {mascararTelefoneBR(g.telefone)}
-                    </p>
-                  </div>
-                  {g.placar_a !== null && g.placar_b !== null && (
-                    <div className="shrink-0 rounded-lg bg-cl-verde/10 text-cl-verde-escuro px-2 py-1 font-display tabular-nums text-base">
-                      {g.placar_a}×{g.placar_b}
-                    </div>
-                  )}
-                </li>
+                <LinhaGanhador key={`${g.comanda}-${i}`} g={g} />
               ))}
             </ul>
           </>
         )}
       </div>
     </section>
+  );
+}
+
+function LinhaGanhador({ g }: { g: Ganhador }) {
+  return (
+    <li className="rounded-2xl bg-white/85 border border-cl-verde/20 p-3 flex items-center gap-3">
+      <div className="size-16 shrink-0 rounded-xl bg-cl-verde-escuro text-white flex flex-col items-center justify-center">
+        <span className="text-[9px] uppercase tracking-wider opacity-80">Comanda</span>
+        <span className="font-display text-2xl leading-none tabular-nums">
+          {g.comanda ?? "—"}
+        </span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="font-display text-cl-verde-escuro text-lg leading-tight truncate">
+          {g.nome ?? "—"}
+        </p>
+        <p className="text-xs text-cl-cinza-texto">
+          {mascararTelefoneBR(g.telefone)}
+        </p>
+      </div>
+      {g.placar_a !== null && g.placar_b !== null && g.placar_a !== undefined && g.placar_b !== undefined && (
+        <div className="shrink-0 rounded-lg bg-cl-verde/10 text-cl-verde-escuro px-2 py-1 font-display tabular-nums text-base">
+          {g.placar_a}×{g.placar_b}
+        </div>
+      )}
+    </li>
   );
 }
 
