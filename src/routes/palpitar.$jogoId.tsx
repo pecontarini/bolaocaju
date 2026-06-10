@@ -12,6 +12,7 @@ import { type Jogo } from "@/lib/jogos";
 import { Bandeira } from "@/components/jogos/Bandeira";
 import { useJogosRealtime } from "@/hooks/useJogosRealtime";
 import { useMarcaAtual } from "@/lib/marca";
+import { useUsarTexturas } from "@/lib/marca";
 import { usePatrocinador } from "@/components/site/FaixaPatrocinio";
 
 const COLUNAS =
@@ -32,6 +33,7 @@ function PalpitarJogoPage() {
   const { jogoId } = Route.useParams();
   const navigate = useNavigate();
   const { marca } = useMarcaAtual();
+  const usarTexturas = useUsarTexturas();
   const patrocinador = usePatrocinador();
   const cliente_id = useCliente((s) => s.cliente_id);
   const nome = useCliente((s) => s.nome);
@@ -42,6 +44,18 @@ function PalpitarJogoPage() {
   useEffect(() => {
     if (marca?.id) garantirMarca(marca.id);
   }, [marca?.id, garantirMarca]);
+
+  // Marca d'água floral só aparece em marcas com `branding.usar_texturas`.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (!usarTexturas) return;
+    const prev = document.body.dataset.textura;
+    document.body.dataset.textura = "floral";
+    return () => {
+      if (prev) document.body.dataset.textura = prev;
+      else delete document.body.dataset.textura;
+    };
+  }, [usarTexturas]);
 
   const jogoQ = useQuery({
     queryKey: ["jogo-palpite", jogoId, marca?.id],
