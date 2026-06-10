@@ -6,6 +6,7 @@ import { ChevronDown, Trophy, Loader2 } from "lucide-react";
 import { AdminShell, PageHeader } from "@/components/admin/AdminShell";
 import { Bandeira } from "@/components/jogos/Bandeira";
 import { supabase } from "@/integrations/supabase/client";
+import { useMarcaId } from "@/lib/marca";
 import {
   formatarDataHoraBR,
   mascararTelefoneBR,
@@ -32,8 +33,10 @@ type JogoEncerrado = {
 };
 
 function GanhadoresPage() {
+  const marcaId = useMarcaId();
   const q = useQuery({
-    queryKey: ["admin", "ganhadores-jogos"],
+    queryKey: ["admin", "ganhadores-jogos", marcaId],
+    enabled: !!marcaId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("jogos")
@@ -41,6 +44,7 @@ function GanhadoresPage() {
           "id,numero_jogo,time_a,time_b,codigo_a,codigo_b,placar_a,placar_b,data_hora_inicio",
         )
         .eq("status", "encerrado")
+        .eq("marca_id", marcaId!)
         .order("data_hora_inicio", { ascending: false });
       if (error) throw error;
       return (data ?? []) as JogoEncerrado[];
@@ -78,19 +82,25 @@ type GanhadorLinha = {
 
 function ItemJogo({ jogo }: { jogo: JogoEncerrado }) {
   const [aberto, setAberto] = useState(false);
+  const marcaId = useMarcaId();
 
   const ganhadoresQ = useQuery({
-    queryKey: ["admin", "ganhadores", jogo.id],
-    enabled: aberto,
+    queryKey: ["admin", "ganhadores", jogo.id, marcaId],
+    enabled: aberto && !!marcaId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("palpites")
-        .select("comanda, clientes:cliente_id(nome, telefone)")
-        .eq("jogo_id", jogo.id)
-        .eq("acertou", true)
-        .order("comanda", { ascending: true });
+      const { data, error } = await supabase.rpc("fn_ganhadores", {
+        p_marca_id: marcaId!,
+        p_jogo_id: jogo.id,
+      });
       if (error) throw error;
-      return (data ?? []) as unknown as GanhadorLinha[];
+      return ((data ?? []) as Array<{
+        nome: string | null;
+        telefone: string | null;
+        comanda: number | null;
+      }>).map((r) => ({
+        comanda: r.comanda,
+        clientes: { nome: r.nome, telefone: r.telefone },
+      })) as GanhadorLinha[];
     },
   });
 
