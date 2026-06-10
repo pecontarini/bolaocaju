@@ -479,14 +479,19 @@ function AbaVisaoGeral() {
         <button
           type="button"
           onClick={abrirCardapio}
+          disabled={carregandoCardapio}
           className="glass rounded-2xl p-4 flex items-center gap-3 card-press text-left"
         >
           <span className="size-10 rounded-full bg-cl-laranja/20 flex items-center justify-center text-cl-verde-escuro">
-            <UtensilsCrossed className="size-5" />
+            {carregandoCardapio ? (
+              <Loader2 className="size-5 animate-spin" />
+            ) : (
+              <UtensilsCrossed className="size-5" />
+            )}
           </span>
           <span className="flex-1">
             <span className="block font-display text-lg text-cl-verde-escuro leading-tight">
-              Cardápio
+              {carregandoCardapio ? "Abrindo cardápio…" : "Cardápio"}
             </span>
             <span className="block text-xs text-cl-cinza-texto">
               Abre o cardápio da unidade {nomeExibicao}
