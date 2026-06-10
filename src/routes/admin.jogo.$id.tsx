@@ -19,6 +19,7 @@ import {
 
 import { AdminShell, PageHeader } from "@/components/admin/AdminShell";
 import { Bandeira } from "@/components/jogos/Bandeira";
+import { UnidadeFiltro } from "@/components/admin/UnidadeFiltro";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
