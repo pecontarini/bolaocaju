@@ -19,7 +19,6 @@ import {
 
 import { AdminShell, PageHeader } from "@/components/admin/AdminShell";
 import { Bandeira } from "@/components/jogos/Bandeira";
-import { UnidadeFiltro } from "@/components/admin/UnidadeFiltro";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,7 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminSession } from "@/lib/admin/auth";
-import { useMarcaId } from "@/lib/marca";
+import { usePerfilAdmin } from "@/lib/admin/perfil";
 import type { Jogo } from "@/lib/jogos";
 import { formatarReais } from "@/lib/formato";
 import {
@@ -69,6 +68,8 @@ type Ganhador = {
   comanda: number | null;
   placar_a?: number | null;
   placar_b?: number | null;
+  marca_slug?: string | null;
+  unidade_nome?: string | null;
 };
 
 function DetalheJogoPage() {
