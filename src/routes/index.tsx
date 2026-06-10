@@ -11,7 +11,7 @@ import {
 import type { Jogo } from "@/lib/jogos";
 import { useMemo, useState, useEffect } from "react";
 import { useJogosRealtime } from "@/hooks/useJogosRealtime";
-import { useMarcaAtual, useBranding } from "@/lib/marca";
+import { useMarcaAtual, useBranding, useUsarTexturas } from "@/lib/marca";
 import { LogoMarca } from "@/components/site/LogoMarca";
 import { useCliente } from "@/store/cliente";
 import { format, differenceInCalendarDays } from "date-fns";
@@ -148,6 +148,7 @@ function TabBar({ ativa, onChange }: { ativa: Aba; onChange: (a: Aba) => void })
 function AbaVisaoGeral() {
   const { marca } = useMarcaAtual();
   const { nomeExibicao } = useBranding();
+  const usarTexturas = useUsarTexturas();
   const cliente_id = useCliente((s) => s.cliente_id);
   const [hoje, setHoje] = useState<Date | null>(null);
   const [carregandoCardapio, setCarregandoCardapio] = useState(false);

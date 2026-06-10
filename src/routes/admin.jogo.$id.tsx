@@ -804,6 +804,7 @@ function AcaoApurar({
 function CardGanhadores({ jogo }: { jogo: Jogo }) {
   const perfilQ = usePerfilAdmin();
   const perfil = perfilQ.data ?? null;
+  const usarTexturas = useUsarTexturas();
   const jaEncerrado = jogo.status === "encerrado";
   const q = useQuery({
     queryKey: ["admin", "meus-ganhadores", jogo.id, perfil?.papel ?? null, perfil?.unidade_id ?? null],

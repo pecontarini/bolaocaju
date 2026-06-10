@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useJogosRealtime } from "@/hooks/useJogosRealtime";
 import { LogoMarca } from "@/components/site/LogoMarca";
+import { useUsarTexturas } from "@/lib/marca";
 
 export const Route = createFileRoute("/sobre-copa")({
   head: () => ({
@@ -39,6 +40,7 @@ const NOME_PAIS: Record<string, string> = {
 
 function SobreCopa() {
   useJogosRealtime();
+  const usarTexturas = useUsarTexturas();
   const grupos = useQuery({
     queryKey: ["sobre-copa", "grupos"],
     queryFn: async () => {
