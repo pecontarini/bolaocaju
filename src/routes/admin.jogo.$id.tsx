@@ -801,14 +801,16 @@ function AcaoApurar({
 
 function CardGanhadores({ jogo }: { jogo: Jogo }) {
   const marcaId = useMarcaId();
+  const [unidadeId, setUnidadeId] = useState<string | null>(null);
   const jaEncerrado = jogo.status === "encerrado";
   const q = useQuery({
-    queryKey: ["admin", "ganhadores", marcaId, jogo.id],
+    queryKey: ["admin", "ganhadores", marcaId, jogo.id, unidadeId],
     enabled: !!marcaId && jaEncerrado,
     queryFn: async (): Promise<Ganhador[]> => {
       const { data, error } = await supabase.rpc("fn_ganhadores", {
         p_marca_id: marcaId!,
         p_jogo_id: jogo.id,
+        p_unidade_id: unidadeId,
       });
       if (error) throw error;
       type Row = {
