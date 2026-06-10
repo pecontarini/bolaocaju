@@ -859,12 +859,16 @@ function CardGanhadores({ jogo }: { jogo: Jogo }) {
   return (
     <section
       className="rounded-3xl overflow-hidden relative glass"
-      style={{
-        backgroundImage:
-          "linear-gradient(180deg, color-mix(in oklab, white 78%, transparent), color-mix(in oklab, white 92%, transparent)), url('/assets/15-textura-floral.png')",
-        backgroundSize: "cover, 220px",
-        backgroundRepeat: "no-repeat, repeat",
-      }}
+      style={
+        usarTexturas
+          ? {
+              backgroundImage:
+                "linear-gradient(180deg, color-mix(in oklab, white 78%, transparent), color-mix(in oklab, white 92%, transparent)), url('/assets/15-textura-floral.png')",
+              backgroundSize: "cover, 220px",
+              backgroundRepeat: "no-repeat, repeat",
+            }
+          : undefined
+      }
     >
       <div className="p-6">
         <div className="text-center">

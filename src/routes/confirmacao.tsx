@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { LayoutCliente } from "@/components/site/LayoutCliente";
 import { useCliente } from "@/store/cliente";
 import { LogoMarca } from "@/components/site/LogoMarca";
+import { useUsarTexturas } from "@/lib/marca";
 
 export const Route = createFileRoute("/confirmacao")({
   component: ConfirmacaoPage,
@@ -12,6 +13,7 @@ export const Route = createFileRoute("/confirmacao")({
 function ConfirmacaoPage() {
   const palpite = useCliente((s) => s.ultimoPalpite);
   const navigate = useNavigate();
+  const usarTexturas = useUsarTexturas();
 
   useEffect(() => {
     if (!palpite) navigate({ to: "/", replace: true });
@@ -22,12 +24,16 @@ function ConfirmacaoPage() {
   return (
     <div
       className="min-h-screen relative bg-cl-cinza-bg"
-      style={{
-        backgroundImage:
-          "linear-gradient(rgba(255,255,255,0.85), rgba(255,255,255,0.85)), url('/assets/15-textura-floral.png')",
-        backgroundRepeat: "repeat",
-        backgroundSize: "360px",
-      }}
+      style={
+        usarTexturas
+          ? {
+              backgroundImage:
+                "linear-gradient(rgba(255,255,255,0.85), rgba(255,255,255,0.85)), url('/assets/15-textura-floral.png')",
+              backgroundRepeat: "repeat",
+              backgroundSize: "360px",
+            }
+          : undefined
+      }
     >
       <main className="mx-auto max-w-[480px] px-5 py-10 flex flex-col items-center text-center min-h-screen">
         <LogoMarca

@@ -6,7 +6,7 @@ export const SLUG_DEFAULT = "caju-limao";
 export const SLUGS_CONHECIDOS = ["caju-limao", "caminito", "responsa"] as const;
 export type SlugMarca = (typeof SLUGS_CONHECIDOS)[number];
 
-export type Branding = Record<string, string> & {
+export type Branding = Record<string, unknown> & {
   logo?: string;
   logo_branco?: string;
   icone?: string;

@@ -323,15 +323,17 @@ function AbaVisaoGeral() {
         className="relative overflow-hidden rounded-3xl glass px-5 pt-5 pb-6 text-center"
         data-textura="hero"
       >
-        <div
-          aria-hidden
-          className="absolute inset-0 -z-10 opacity-[0.06] pointer-events-none"
-          style={{
-            backgroundImage: "url('/assets/16-textura-geometrica.png')",
-            backgroundSize: "260px",
-            backgroundRepeat: "repeat",
-          }}
-        />
+        {usarTexturas && (
+          <div
+            aria-hidden
+            className="absolute inset-0 -z-10 opacity-[0.06] pointer-events-none"
+            style={{
+              backgroundImage: "url('/assets/16-textura-geometrica.png')",
+              backgroundSize: "260px",
+              backgroundRepeat: "repeat",
+            }}
+          />
+        )}
         <LogoMarca
           imgClassName="mx-auto h-[156px] w-auto max-w-[280px] object-contain"
           fallbackClassName="block mx-auto font-display text-3xl font-bold text-cl-verde-escuro"

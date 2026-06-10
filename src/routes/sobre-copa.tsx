@@ -86,16 +86,18 @@ function SobreCopa() {
 
       {/* Hero */}
       <section className="relative overflow-hidden rounded-3xl bg-white border border-border shadow-sm">
-        <div
-          aria-hidden
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: "url('/assets/16-textura-geometrica.png')",
-            backgroundRepeat: "repeat",
-            backgroundSize: "260px",
-            opacity: 0.07,
-          }}
-        />
+        {usarTexturas && (
+          <div
+            aria-hidden
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              backgroundImage: "url('/assets/16-textura-geometrica.png')",
+              backgroundRepeat: "repeat",
+              backgroundSize: "260px",
+              opacity: 0.07,
+            }}
+          />
+        )}
         <div className="relative p-6 text-center">
           <div className="flex justify-center">
             <LogoMarca
