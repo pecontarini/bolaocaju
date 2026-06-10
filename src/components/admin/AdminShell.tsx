@@ -2,8 +2,10 @@ import { useEffect, type ReactNode } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { LayoutDashboard, ListOrdered, Trophy, Users, LogOut, Loader2, Menu, Package } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { useAdminSession, signOutAdmin } from "@/lib/admin/auth";
+import { usePerfilAdmin, type PerfilAdmin } from "@/lib/admin/perfil";
 import { Button } from "@/components/ui/button";
 import { useBranding } from "@/lib/marca";
 import { FaixaPatrocinio } from "@/components/site/FaixaPatrocinio";
@@ -26,6 +28,7 @@ const NAV = [
 export function AdminShell({ children }: { children: ReactNode }) {
   const auth = useAdminSession();
   const navigate = useNavigate();
+  const perfilQ = usePerfilAdmin();
 
   useEffect(() => {
     if (auth.status === "out") {
@@ -33,7 +36,18 @@ export function AdminShell({ children }: { children: ReactNode }) {
     }
   }, [auth.status, navigate]);
 
-  if (auth.status !== "in") {
+  useEffect(() => {
+    if (auth.status !== "in") return;
+    if (perfilQ.isLoading) return;
+    if (perfilQ.error || perfilQ.data === null) {
+      toast.error("Usuário sem loja vinculada. Procure o administrador.");
+      signOutAdmin().finally(() => {
+        navigate({ to: "/admin/login", replace: true });
+      });
+    }
+  }, [auth.status, perfilQ.isLoading, perfilQ.error, perfilQ.data, navigate]);
+
+  if (auth.status !== "in" || perfilQ.isLoading || !perfilQ.data) {
     return (
       <div className="min-h-screen flex items-center justify-center text-cl-verde-escuro">
         <Loader2 className="size-6 animate-spin" />
@@ -43,8 +57,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen">
-      <HeaderAdmin email={auth.session.user.email ?? ""} />
+      <HeaderAdmin email={auth.session.user.email ?? ""} perfil={perfilQ.data} />
       <FaixaPatrocinio />
+      <BannerPerfil perfil={perfilQ.data} />
       <main className="mx-auto max-w-[480px] px-4 pt-3 pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
         {children}
       </main>
@@ -65,9 +80,24 @@ export function AdminShell({ children }: { children: ReactNode }) {
   );
 }
 
-function HeaderAdmin({ email }: { email: string }) {
+function BannerPerfil({ perfil }: { perfil: PerfilAdmin }) {
+  const texto =
+    perfil.papel === "admin_geral"
+      ? "Admin Geral — todas as marcas"
+      : `${perfil.marca_slug ?? "?"} — ${perfil.unidade_nome ?? "?"}`;
+  return (
+    <div className="mx-auto max-w-[480px] px-4 pt-3">
+      <div className="rounded-xl bg-cl-verde/10 border border-cl-verde/25 px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-cl-verde-escuro font-semibold text-center">
+        {texto}
+      </div>
+    </div>
+  );
+}
+
+function HeaderAdmin({ email, perfil }: { email: string; perfil: PerfilAdmin }) {
   const [open, setOpen] = useState(false);
   const { nomeExibicao: nome, logoSrc } = useBranding();
+  void perfil;
   return (
     <header className="sticky top-0 z-30 glass-sticky">
       <div
@@ -80,13 +110,7 @@ function HeaderAdmin({ email }: { email: string }) {
             alt={nome}
             className="h-9 w-auto"
             onError={(e) => {
-              const img = e.currentTarget as HTMLImageElement;
-              if (!img.dataset.fb) {
-                img.dataset.fb = "1";
-                img.src = "/assets/01-logo-horizontal-verde.png";
-              } else {
-                img.style.display = "none";
-              }
+              (e.currentTarget as HTMLImageElement).style.display = "none";
             }}
           />
           <span className="ml-1 inline-flex items-center rounded-full bg-cl-verde/12 text-cl-verde-escuro text-[10px] font-semibold uppercase tracking-[0.14em] px-2 py-0.5 border border-cl-verde/25">
