@@ -6,7 +6,7 @@ export const SLUG_DEFAULT = "caju-limao";
 export const SLUGS_CONHECIDOS = ["caju-limao", "caminito", "responsa"] as const;
 export type SlugMarca = (typeof SLUGS_CONHECIDOS)[number];
 
-export type Branding = Record<string, unknown> & {
+export type Branding = {
   logo?: string;
   logo_branco?: string;
   icone?: string;
@@ -16,6 +16,8 @@ export type Branding = Record<string, unknown> & {
   fonte_display?: string;
   fonte_corpo?: string;
   usar_texturas?: boolean;
+  // Tokens livres de cor da marca (cor_verde, cor_creme, etc.)
+  [chave: string]: string | boolean | undefined;
 };
 
 export type Marca = {
