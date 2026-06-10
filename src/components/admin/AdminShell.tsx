@@ -58,9 +58,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen">
       <HeaderAdmin email={auth.session.user.email ?? ""} perfil={perfilQ.data} />
-      <FaixaPatrocinio />
       <BannerPerfil perfil={perfilQ.data} />
-      <main className="mx-auto max-w-[480px] px-4 pt-3 pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
+      <main className="mx-auto max-w-[480px] px-4 pt-3 pb-[calc(6rem+env(safe-area-inset-bottom))]">
         {children}
       </main>
       <footer className="mx-auto max-w-[480px] px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] text-center">
@@ -76,6 +75,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
           </a>
         </p>
       </footer>
+      <FaixaPatrocinio posicao="rodape" />
     </div>
   );
 }
