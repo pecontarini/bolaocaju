@@ -50,7 +50,9 @@ function aplicarBranding(slug: string, branding: Branding) {
 
   // Liga/desliga texturas globais (body::before) por marca.
   if (typeof document !== "undefined") {
-    document.body.dataset.texturas = branding.usar_texturas ? "on" : "off";
+    const usarTexturas =
+      (branding as { usar_texturas?: boolean }).usar_texturas === true;
+    document.body.dataset.texturas = usarTexturas ? "on" : "off";
   }
 
   // Fonte display por marca — vem sempre de branding.fonte_display.
