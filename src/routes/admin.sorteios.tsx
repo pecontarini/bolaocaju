@@ -5,6 +5,7 @@ import { ChevronDown, Trophy, Loader2 } from "lucide-react";
 
 import { AdminShell, PageHeader } from "@/components/admin/AdminShell";
 import { Bandeira } from "@/components/jogos/Bandeira";
+import { UnidadeFiltro } from "@/components/admin/UnidadeFiltro";
 import { supabase } from "@/integrations/supabase/client";
 import { useMarcaId } from "@/lib/marca";
 import {
@@ -34,6 +35,7 @@ type JogoEncerrado = {
 
 function GanhadoresPage() {
   const marcaId = useMarcaId();
+  const [unidadeId, setUnidadeId] = useState<string | null>(null);
   const q = useQuery({
     queryKey: ["admin", "ganhadores-jogos", marcaId],
     enabled: !!marcaId,
@@ -58,6 +60,10 @@ function GanhadoresPage() {
         subtitulo="Comandas que acertaram o placar no tempo regular."
       />
 
+      <div className="mb-4">
+        <UnidadeFiltro value={unidadeId} onChange={setUnidadeId} />
+      </div>
+
       {q.isLoading ? (
         <div className="glass rounded-2xl h-64 animate-pulse" />
       ) : !q.data || q.data.length === 0 ? (
@@ -67,7 +73,7 @@ function GanhadoresPage() {
       ) : (
         <ul className="space-y-3">
           {q.data.map((j) => (
-            <ItemJogo key={j.id} jogo={j} />
+            <ItemJogo key={j.id} jogo={j} unidadeId={unidadeId} />
           ))}
         </ul>
       )}
@@ -80,17 +86,24 @@ type GanhadorLinha = {
   clientes: { nome: string | null; telefone: string | null } | null;
 };
 
-function ItemJogo({ jogo }: { jogo: JogoEncerrado }) {
+function ItemJogo({
+  jogo,
+  unidadeId,
+}: {
+  jogo: JogoEncerrado;
+  unidadeId: string | null;
+}) {
   const [aberto, setAberto] = useState(false);
   const marcaId = useMarcaId();
 
   const ganhadoresQ = useQuery({
-    queryKey: ["admin", "ganhadores", jogo.id, marcaId],
+    queryKey: ["admin", "ganhadores", jogo.id, marcaId, unidadeId],
     enabled: aberto && !!marcaId,
     queryFn: async () => {
       const { data, error } = await supabase.rpc("fn_ganhadores", {
         p_marca_id: marcaId!,
         p_jogo_id: jogo.id,
+        p_unidade_id: unidadeId,
       });
       if (error) throw error;
       return ((data ?? []) as Array<{
