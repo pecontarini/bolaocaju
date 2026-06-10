@@ -883,6 +883,12 @@ function CardGanhadores({ jogo }: { jogo: Jogo }) {
           )}
         </div>
 
+        {jaEncerrado && (
+          <div className="mt-4">
+            <UnidadeFiltro value={unidadeId} onChange={setUnidadeId} />
+          </div>
+        )}
+
         {!jaEncerrado ? (
           <p className="mt-6 text-center text-sm text-cl-cinza-texto">
             Aguardando resultado do jogo.
