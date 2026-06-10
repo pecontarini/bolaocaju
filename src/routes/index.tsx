@@ -34,6 +34,7 @@ import {
   Ticket,
   CalendarDays,
   CheckCircle2,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -149,6 +150,7 @@ function AbaVisaoGeral() {
   const { nomeExibicao } = useBranding();
   const cliente_id = useCliente((s) => s.cliente_id);
   const [hoje, setHoje] = useState<Date | null>(null);
+  const [carregandoCardapio, setCarregandoCardapio] = useState(false);
   useEffect(() => {
     setHoje(new Date());
     const id = setInterval(() => setHoje(new Date()), 60_000);
@@ -262,39 +264,56 @@ function AbaVisaoGeral() {
   });
 
   async function abrirCardapio() {
-    const fallback = marca?.branding?.cardapio_url;
-    const openFallback = () => {
-      if (fallback) window.open(fallback, "_blank", "noopener,noreferrer");
-      else toast.error("Cardápio indisponível no momento.");
-    };
-    if (!marca?.id || typeof navigator === "undefined" || !("geolocation" in navigator)) {
-      openFallback();
+    if (carregandoCardapio) return;
+    if (!marca?.id) {
+      toast.error("Cardápio indisponível no momento.");
       return;
     }
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const { data, error } = await supabase.rpc("fn_cardapio_por_geo", {
-            p_lat: pos.coords.latitude,
-            p_lon: pos.coords.longitude,
-            p_marca_id: marca.id,
-          });
-          if (error) {
-            console.error(error);
-            openFallback();
-            return;
-          }
-          const url = (data as string | null) ?? fallback;
-          if (url) window.open(url, "_blank", "noopener,noreferrer");
-          else toast.error("Cardápio indisponível no momento.");
-        } catch (e) {
-          console.error(e);
-          openFallback();
+    setCarregandoCardapio(true);
+    // Coordenadas SÃO opcionais: nunca bloqueiam o clique.
+    const coords = await new Promise<{ lat: number | null; lon: number | null }>(
+      (resolve) => {
+        if (typeof navigator === "undefined" || !navigator.geolocation) {
+          resolve({ lat: null, lon: null });
+          return;
         }
+        const t = setTimeout(
+          () => resolve({ lat: null, lon: null }),
+          4000,
+        );
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            clearTimeout(t);
+            resolve({
+              lat: pos.coords.latitude,
+              lon: pos.coords.longitude,
+            });
+          },
+          () => {
+            clearTimeout(t);
+            resolve({ lat: null, lon: null });
+          },
+          { enableHighAccuracy: false, timeout: 4000, maximumAge: 600_000 },
+        );
       },
-      () => openFallback(),
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 },
     );
+    try {
+      const { data: url, error } = await supabase.rpc("fn_cardapio_por_geo", {
+        p_lat: coords.lat,
+        p_lon: coords.lon,
+        p_marca_id: marca.id,
+      });
+      if (error || !url) {
+        toast.error("Cardápio indisponível no momento.");
+        return;
+      }
+      window.open(url as string, "_blank", "noopener");
+    } catch (e) {
+      console.error(e);
+      toast.error("Cardápio indisponível no momento.");
+    } finally {
+      setCarregandoCardapio(false);
+    }
   }
 
   return (
@@ -461,14 +480,19 @@ function AbaVisaoGeral() {
         <button
           type="button"
           onClick={abrirCardapio}
+          disabled={carregandoCardapio}
           className="glass rounded-2xl p-4 flex items-center gap-3 card-press text-left"
         >
           <span className="size-10 rounded-full bg-cl-laranja/20 flex items-center justify-center text-cl-verde-escuro">
-            <UtensilsCrossed className="size-5" />
+            {carregandoCardapio ? (
+              <Loader2 className="size-5 animate-spin" />
+            ) : (
+              <UtensilsCrossed className="size-5" />
+            )}
           </span>
           <span className="flex-1">
             <span className="block font-display text-lg text-cl-verde-escuro leading-tight">
-              Cardápio
+              {carregandoCardapio ? "Abrindo cardápio…" : "Cardápio"}
             </span>
             <span className="block text-xs text-cl-cinza-texto">
               Abre o cardápio da unidade {nomeExibicao}
