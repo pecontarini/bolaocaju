@@ -133,7 +133,7 @@
     background-color: #F7F5EF;
     position: relative;
   }
-  body::before {
+  body[data-texturas="on"]::before {
     content: "";
     position: fixed;
     inset: 0;
@@ -146,7 +146,7 @@
     /* Tinge a textura no verde Caju discreto */
     filter: saturate(0.6);
   }
-  body[data-textura="floral"]::before {
+  body[data-texturas="on"][data-textura="floral"]::before {
     background-image: url("/assets/15-textura-floral.png");
     background-size: 400px;
     opacity: 0.05;

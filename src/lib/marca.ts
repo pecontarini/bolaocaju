@@ -15,6 +15,7 @@ export type Branding = Record<string, string> & {
   nome_exibicao?: string;
   fonte_display?: string;
   fonte_corpo?: string;
+  usar_texturas?: boolean;
 };
 
 export type Marca = {
@@ -127,6 +128,17 @@ export function useMarcaAtual() {
 export function useMarcaId(): string | null {
   const marca = useMarcaStore((s) => s.marca);
   return marca?.id ?? null;
+}
+
+/**
+ * Indica se a marca atual deve renderizar texturas/azulejos de fundo
+ * (faixa azulejos, textura geométrica, textura floral, marca d'água).
+ * Hoje só está ativo para marcas com `branding.usar_texturas === true`
+ * (ex.: Caju Limão). Demais marcas usam fundo limpo.
+ */
+export function useUsarTexturas(): boolean {
+  const marca = useMarcaStore((s) => s.marca);
+  return marca?.branding?.usar_texturas === true;
 }
 
 /**
