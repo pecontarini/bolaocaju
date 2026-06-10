@@ -802,17 +802,15 @@ function AcaoApurar({
 }
 
 function CardGanhadores({ jogo }: { jogo: Jogo }) {
-  const marcaId = useMarcaId();
-  const [unidadeId, setUnidadeId] = useState<string | null>(null);
+  const perfilQ = usePerfilAdmin();
+  const perfil = perfilQ.data ?? null;
   const jaEncerrado = jogo.status === "encerrado";
   const q = useQuery({
-    queryKey: ["admin", "ganhadores", marcaId, jogo.id, unidadeId],
-    enabled: !!marcaId && jaEncerrado,
+    queryKey: ["admin", "meus-ganhadores", jogo.id, perfil?.papel ?? null, perfil?.unidade_id ?? null],
+    enabled: !!perfil && jaEncerrado,
     queryFn: async (): Promise<Ganhador[]> => {
-      const { data, error } = await supabase.rpc("fn_ganhadores", {
-        p_marca_id: marcaId!,
+      const { data, error } = await supabase.rpc("fn_meus_ganhadores", {
         p_jogo_id: jogo.id,
-        p_unidade_id: unidadeId,
       });
       if (error) throw error;
       type Row = {
@@ -821,6 +819,8 @@ function CardGanhadores({ jogo }: { jogo: Jogo }) {
         comanda: number | null;
         placar_a: number | null;
         placar_b: number | null;
+        marca_slug: string | null;
+        unidade_nome: string | null;
       };
       return ((data ?? []) as unknown as Row[]).map((r) => ({
         nome: r.nome ?? null,
@@ -828,6 +828,8 @@ function CardGanhadores({ jogo }: { jogo: Jogo }) {
         comanda: r.comanda ?? null,
         placar_a: r.placar_a ?? null,
         placar_b: r.placar_b ?? null,
+        marca_slug: r.marca_slug ?? null,
+        unidade_nome: r.unidade_nome ?? null,
       }));
     },
   });
@@ -837,6 +839,22 @@ function CardGanhadores({ jogo }: { jogo: Jogo }) {
     lista.map((g) => g.comanda).filter((c): c is number => c != null),
   ).size;
   const tituloJogo = `${jogo.codigo_a ?? jogo.time_a} × ${jogo.codigo_b ?? jogo.time_b}`;
+
+  const ehGeral = perfil?.papel === "admin_geral";
+  // Para admin_geral, agrupa por marca_slug → unidade_nome.
+  const grupos = (() => {
+    if (!ehGeral) return null;
+    const porMarca = new Map<string, Map<string, Ganhador[]>>();
+    for (const g of lista) {
+      const m = g.marca_slug ?? "—";
+      const u = g.unidade_nome ?? "—";
+      if (!porMarca.has(m)) porMarca.set(m, new Map());
+      const subm = porMarca.get(m)!;
+      if (!subm.has(u)) subm.set(u, []);
+      subm.get(u)!.push(g);
+    }
+    return porMarca;
+  })();
 
   return (
     <section
@@ -883,12 +901,6 @@ function CardGanhadores({ jogo }: { jogo: Jogo }) {
             </Button>
           )}
         </div>
-
-        {jaEncerrado && (
-          <div className="mt-4">
-            <UnidadeFiltro value={unidadeId} onChange={setUnidadeId} />
-          </div>
-        )}
 
         {!jaEncerrado ? (
           <p className="mt-6 text-center text-sm text-cl-cinza-texto">
