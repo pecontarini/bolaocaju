@@ -173,7 +173,18 @@ function PalpitarJogoPage() {
       });
       if (error) {
         const code = (error as { code?: string }).code ?? "";
-        const m = (error.message || "").toLowerCase();
+        const rawMsg = error.message || "";
+        const m = rawMsg.toLowerCase();
+        if (rawMsg.includes("Não encontramos seu cadastro") || m.includes("não encontramos seu cadastro")) {
+          useCliente.getState().limpar();
+          toast.error("Seu cadastro expirou. Faça o cadastro novamente para palpitar.");
+          navigate({
+            to: "/cadastro",
+            search: { next: `/palpitar/${jogoId}` },
+            replace: true,
+          });
+          return;
+        }
         if (code === "23505" || m.includes("duplicate")) {
           toast.error("Você já palpitou neste jogo.");
         } else if (m.includes("metros")) {
