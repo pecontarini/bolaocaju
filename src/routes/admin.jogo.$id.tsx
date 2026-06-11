@@ -697,14 +697,11 @@ function AcaoApurar({
   const acertadoresQ = useQuery({
     queryKey: ["admin", "acertadores", jogo.id, jogo.placar_a, jogo.placar_b],
     queryFn: async () => {
-      const { count, error } = await supabase
-        .from("palpites")
-        .select("id", { count: "exact", head: true })
-        .eq("jogo_id", jogo.id)
-        .eq("placar_a", jogo.placar_a)
-        .eq("placar_b", jogo.placar_b);
+      const { data, error } = await supabase.rpc("fn_meus_ganhadores", {
+        p_jogo_id: jogo.id,
+      });
       if (error) throw error;
-      return count ?? 0;
+      return Array.isArray(data) ? data.length : 0;
     },
   });
 
