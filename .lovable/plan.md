@@ -1,65 +1,37 @@
-# Restauração do modelo multi-marca
+## Objetivo
+Garantir que `pedrocontarini@empresasmult.com.br` consiga logar no `/admin/login` e ver palpites e movimentação de TODAS as lojas (papel `admin_geral`), independentemente do subdomínio que estiver acessando.
 
-## 1. Sincronizar types do Supabase
+## O que será feito
 
-- Regerar `src/integrations/supabase/types.ts` a partir do projeto `atolxisdfsnjqiitczbd` para enxergar `marcas`, `marca_jogos`, `unidades`, `jogos.finalizado` e as RPCs `fn_valida_geo`, `fn_identificar_cliente`, `fn_aplicar_resultado`.
-- Tipar `client.ts` com `createClient<Database>(...)`.
+### 1. Migration — promover o usuário a `admin_geral`
+- Localizar o `auth.users.id` pelo e-mail `pedrocontarini@empresasmult.com.br`.
+- UPSERT na tabela de perfis admin lida por `fn_meu_perfil` (assumindo `public.perfis_admin` com colunas `user_id`, `papel`, `marca_id`, `unidade_id`). Se a tabela tiver outro nome, a migration falha de forma clara e ajusto.
+- `papel = 'admin_geral'`, `marca_id = NULL`, `unidade_id = NULL`.
+- Se o e-mail ainda não existir em `auth.users`, a migration aborta com mensagem clara pedindo o cadastro prévio (não dá pra criar usuário do auth via migration sem service role).
 
-## 2. Resolução de marca
+### 2. Frontend — respeitar `admin_geral` (sem filtro de marca/unidade)
+Hoje várias telas chumbam `marca_id` resolvido do hostname. Para `papel === 'admin_geral'`, remover o filtro:
 
-- Novo módulo `src/lib/marca.ts`:
-  - `resolverSlugMarca()`: lê `window.location.hostname` (primeiro segmento do subdomínio: `caminito.boteco.app` → `caminito`); fallback para query `?marca=`; default `caju-limao`. Ignora hostnames de preview da Lovable e `localhost` (usa default + query).
-  - `useMarcaAtual()` (Zustand + React Query): carrega `marcas` pelo slug e expõe `{ id, slug, nome, branding }`.
-- Trocar `src/store/cliente.ts` para guardar `marca_id` junto da sessão (ou criar `store/marca.ts` separado e limpar o cliente quando o slug mudar).
+- `src/routes/admin.sorteios.tsx`
+  - Query de `jogos` encerrados: tirar `.eq("marca_id", marcaId)` quando `papel = admin_geral` (lista todos os jogos encerrados de todas as marcas).
+  - Cabeçalho do item já agrupa por `marca_slug → unidade_nome` quando geral — mantido.
 
-## 3. Branding dinâmico
+- `src/routes/admin.jogo.$id.tsx`
+  - Carregar perfil antes de chamar queries que dependem de marca.
+  - Quando `admin_geral`: a chamada de `fn_meus_ganhadores` já retorna `marca_slug`/`unidade_nome` e a tela já agrupa. Verificar que a página de detalhe não bloqueia acesso a jogos de outras marcas (hoje a rota carrega o jogo por `id` direto, sem filtro de marca — OK).
 
-- Componente `<BrandingProvider>` no `__root.tsx` que, ao carregar a marca:
-  - Aplica vars CSS no `:root`: `--brand-primary`, `--brand-secondary`, `--brand-bg`, etc., mapeando as chaves de `branding` (cores variam por marca — usar um normalizador).
-  - Troca `<title>` e `<link rel="icon">` para `branding.icone`.
-  - Expõe `branding.logo`, `branding.nome_exibicao`, `branding.fonte_display` via contexto.
-- `HeaderCliente` e `AdminShell`: ler logo e nome do contexto, não mais hardcode `/assets/01-logo-horizontal-verde.png`.
-- Caminho de asset: `/assets/<slug>/<arquivo>` (ex.: `/assets/caminito/caminito-vaquinha-colorida.png`). Os arquivos físicos já devem existir; caso não existam para alguma marca, manter fallback para o logo do Caju.
-- Mover tokens do `styles.css` (`--cl-verde*`, etc.) para usarem as vars de marca; classes Tailwind `bg-cl-verde-escuro` viram `bg-[var(--brand-primary)]` ou equivalente, ou redefinimos os tokens existentes para apontarem para as vars de marca (menos invasivo).
+- `src/routes/admin.index.tsx` (Dashboard)
+  - `NumerosDoDia` (palpites/clientes do dia) e listas de jogos hoje/abertos: hoje **não** filtram por marca — deixar como está (já é visão global, perfeito pro admin_geral).
 
-## 4. Queries por marca
+- `src/components/admin/AdminShell.tsx`
+  - `BannerPerfil` já mostra "Admin Geral — todas as marcas" quando `papel = admin_geral`. Mantido.
 
-- **Jogo do momento** (home + banner): `from('marca_jogos').select('status, palpites_encerrados, premio_descricao, premio_imagem_url, premio_produto_id, premio_quantidade, jogos!inner(*)').eq('marca_id', marcaId).eq('status','ativo').maybeSingle()`.
-- **Próximos / Últimos / Por data / Por grupo / Por rodada / Por time**: continuam em `from('jogos')` (calendário global). Trocar filtros para `finalizado=false` (próximos, asc) e `finalizado=true` (últimos, desc), ambos por `data_hora_inicio`.
-- **Total encerrados**: `from('jogos').select('*', { count: 'exact', head: true }).eq('finalizado', true)`.
-- **Admin de jogos**: lista global vem de `jogos`; o estado por marca (status, prêmio, palpites_encerrados) vem de `marca_jogos`. O painel admin precisa de seletor de marca (ou escopo na marca atual). Esta entrega assume "marca atual = a do subdomínio/query" — admin opera sobre a marca atual; se precisar trocar, troca pelo seletor de marca.
-
-## 5. Palpite + geo + cadastro
-
-- `palpitar.$jogoId.tsx`:
-  - Buscar o `marca_jogos` da marca atual para esse jogo e validar `status='ativo'` + `palpites_encerrados=false`.
-  - Geo: `supabase.rpc('fn_valida_geo', { p_lat, p_lon, p_marca_id: marcaId })`.
-  - Insert em `palpites` com `{ marca_id, jogo_id, cliente_id, comanda, placar_a, placar_b, latitude, longitude }`.
-- `cadastro.tsx`: `supabase.rpc('fn_identificar_cliente', { p_marca_id: marcaId, p_nome, p_telefone, p_opt_in })`.
-- `meus-palpites.tsx`: filtrar por `marca_id` + `cliente_id`.
-
-## 6. Sincronização de resultados
-
-- A edge function `sincronizar-resultados` já existe; confirmar que após atualizar `jogos` ela chama `fn_aplicar_resultado` para cada `marca_jogos` da partida (isso é trabalho de função SQL/edge — apenas verificar; ajustes ficam fora do escopo se já estiver correto no banco).
-
-## 7. Verificação
-
-- Testar `?marca=caju-limao`, `?marca=caminito`, `?marca=responsa` na preview:
-  - Logo, nome e cores do header trocam.
-  - "Jogo do momento" usa o `marca_jogos` correto (pode estar vazio se nenhuma marca tem `ativo` agora — mostrar "Nenhum jogo ativo agora").
-  - Calendário (próximos/últimos) é idêntico nas três.
-  - Palpite e cadastro enviam `marca_id` correto (verificar via network tab).
+### 3. Verificação
+- Login com o e-mail → confirmar que `fn_meu_perfil` devolve `papel=admin_geral`.
+- `/admin/sorteios` mostra jogos encerrados de **todas** as marcas (Caju, Caminito, Responsa) e agrupa ganhadores por marca/unidade.
+- `/admin` mostra números globais do dia.
 
 ## Detalhes técnicos
-
-- **Types**: como não tenho CLI do Supabase no sandbox, vou escrever o `types.ts` manualmente refletindo as tabelas confirmadas via REST (`marcas`, `marca_jogos`, `unidades`, `jogos` com `finalizado`, `clientes`, `palpites`, `produtos`, `sorteios`). Se você preferir, rode `npx supabase gen types typescript --project-id atolxisdfsnjqiitczbd` localmente e cole por cima — funciona igual.
-- **CSS vars**: definidas em `:root` por JS no boot da marca, evitando flash usando `<script>` no `__root` head que lê o slug do URL e seta cores default conhecidas antes de o React montar (otimização opcional).
-- **Assets das marcas**: presumo que estejam em `public/assets/<slug>/`. Se não estiverem, preciso de upload ou de um mapa de URLs absolutas em `branding` — me avise.
-- **Backward compat**: rotas/queries do admin continuam funcionando; só passam a ler `marca_jogos` em vez de campos diretos em `jogos`.
-
-## Fora de escopo desta entrega
-
-- Migration nova: nenhuma (schema já existe).
-- Edge function: não alterar.
-- Seletor de marca no admin (operar sempre na marca da URL nesta primeira passada).
-- Branding 100% pixel-perfect das marcas novas (Caminito/Responsa): aplicar cores e logo, mas ajustes finos de tipografia/layout específicos por marca ficam para uma segunda passada.
+- Tabela alvo assumida: `public.perfis_admin (user_id uuid PK, papel text, marca_id uuid null, unidade_id uuid null)`. Se for outra (ex.: `usuarios_admin`), ajusto a migration na hora.
+- Não mexo em `fn_meu_perfil`, `fn_meus_ganhadores`, `fn_ganhadores` — são read-only e já cobrem o caso `admin_geral`.
+- Não toco em resolução de marca por hostname nem em logos/branding.

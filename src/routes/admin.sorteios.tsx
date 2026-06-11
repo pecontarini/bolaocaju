@@ -35,18 +35,20 @@ type JogoEncerrado = {
 
 function GanhadoresPage() {
   const marcaId = useMarcaId();
+  const perfilQ = usePerfilAdmin();
+  const ehGeral = perfilQ.data?.papel === "admin_geral";
   const q = useQuery({
-    queryKey: ["admin", "ganhadores-jogos", marcaId],
-    enabled: !!marcaId,
+    queryKey: ["admin", "ganhadores-jogos", ehGeral ? "all" : marcaId],
+    enabled: ehGeral || !!marcaId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let qb = supabase
         .from("jogos")
         .select(
           "id,numero_jogo,time_a,time_b,codigo_a,codigo_b,placar_a,placar_b,data_hora_inicio",
         )
-        .eq("status", "encerrado")
-        .eq("marca_id", marcaId!)
-        .order("data_hora_inicio", { ascending: false });
+        .eq("status", "encerrado");
+      if (!ehGeral) qb = qb.eq("marca_id", marcaId!);
+      const { data, error } = await qb.order("data_hora_inicio", { ascending: false });
       if (error) throw error;
       return (data ?? []) as JogoEncerrado[];
     },
