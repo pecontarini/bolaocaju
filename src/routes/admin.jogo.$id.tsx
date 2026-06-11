@@ -1006,38 +1006,57 @@ function LinhaGanhador({ g }: { g: Ganhador }) {
 
 /* ===== LISTA DE PALPITES (conferência) ===== */
 type PalpiteLinha = {
-  id: string;
+  marca_slug: string | null;
+  unidade_nome: string | null;
+  nome: string | null;
+  telefone: string | null;
   comanda: number | null;
-  placar_a: number;
-  placar_b: number;
+  time_a: string | null;
+  time_b: string | null;
+  placar_a: number | null;
+  placar_b: number | null;
   acertou: boolean | null;
-  created_at: string;
-  clientes: { nome: string | null; telefone: string | null } | null;
+  criado_em: string;
 };
 
 function ListaPalpitesAdmin({ jogoId }: { jogoId: string }) {
   const q = useQuery({
     queryKey: ["admin", "palpites", jogoId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("palpites")
-        .select(
-          "id,comanda,placar_a,placar_b,acertou,created_at,clientes:cliente_id(nome,telefone)",
-        )
-        .eq("jogo_id", jogoId)
-        .order("comanda", { ascending: true, nullsFirst: false });
+      const { data, error } = await supabase.rpc("fn_palpites_admin", {
+        p_jogo_id: jogoId,
+      });
       if (error) throw error;
       return (data ?? []) as unknown as PalpiteLinha[];
     },
     refetchInterval: 30_000,
   });
 
+  const grupos = (() => {
+    const map = new Map<string, Map<string, PalpiteLinha[]>>();
+    for (const p of q.data ?? []) {
+      const m = p.marca_slug ?? "—";
+      const u = p.unidade_nome ?? "—";
+      if (!map.has(m)) map.set(m, new Map());
+      const um = map.get(m)!;
+      if (!um.has(u)) um.set(u, []);
+      um.get(u)!.push(p);
+    }
+    return Array.from(map.entries()).map(([marca, unidades]) => ({
+      marca,
+      unidades: Array.from(unidades.entries()).map(([unidade, palpites]) => ({
+        unidade,
+        palpites,
+      })),
+    }));
+  })();
+
   return (
     <section className="glass rounded-3xl p-5">
       <div className="flex items-center gap-2 mb-3">
         <Receipt className="size-5 text-cl-verde-escuro" />
         <h2 className="font-display text-cl-verde-escuro text-lg">
-          Palpites recebidos
+          Palpites por unidade
         </h2>
       </div>
       {q.isLoading ? (
@@ -1049,51 +1068,81 @@ function ListaPalpitesAdmin({ jogoId }: { jogoId: string }) {
           Nenhum palpite registrado ainda.
         </p>
       ) : (
-        <div className="overflow-x-auto -mx-2">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-[10px] uppercase tracking-wider text-cl-cinza-texto">
-                <th className="text-left px-2 py-2">Comanda</th>
-                <th className="text-left px-2 py-2">Cliente</th>
-                <th className="text-center px-2 py-2">Palpite</th>
-                <th className="text-right px-2 py-2">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {q.data.map((p) => (
-                <tr
-                  key={p.id}
-                  className="border-t border-cl-verde/10 align-middle"
-                >
-                  <td className="px-2 py-2">
-                    <span className="inline-flex items-center justify-center min-w-9 h-8 px-2 rounded-lg bg-cl-verde-escuro text-white font-display tabular-nums">
-                      {p.comanda ?? "—"}
-                    </span>
-                  </td>
-                  <td className="px-2 py-2 min-w-0">
-                    <p className="text-cl-verde-escuro truncate max-w-[140px]">
-                      {p.clientes?.nome ?? "—"}
-                    </p>
-                    <p className="text-[10px] text-cl-cinza-texto truncate">
-                      {mascararTelefoneBR(p.clientes?.telefone)}
-                    </p>
-                  </td>
-                  <td className="px-2 py-2 text-center font-display tabular-nums text-cl-verde-escuro">
-                    {p.placar_a}–{p.placar_b}
-                  </td>
-                  <td className="px-2 py-2 text-right">
-                    {p.acertou ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-cl-verde-escuro bg-cl-laranja px-2 py-0.5 rounded-full">
-                        <Trophy className="size-3" /> Acertou
+        <div className="space-y-4">
+          {grupos.map((g) => {
+            const totalMarca = g.unidades.reduce(
+              (s, u) => s + u.palpites.length,
+              0,
+            );
+            return (
+              <div key={g.marca} className="space-y-3">
+                <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.16em] text-cl-verde-escuro font-semibold border-b border-cl-verde/20 pb-1">
+                  <span>{g.marca}</span>
+                  <span className="tabular-nums">{totalMarca}</span>
+                </div>
+                {g.unidades.map((u) => (
+                  <div key={u.unidade} className="space-y-1">
+                    <div className="flex items-center justify-between text-[11px] text-cl-cinza-texto px-1">
+                      <span className="font-semibold">{u.unidade}</span>
+                      <span className="tabular-nums">
+                        {u.palpites.length} palpite
+                        {u.palpites.length === 1 ? "" : "s"}
                       </span>
-                    ) : (
-                      <span className="text-[11px] text-cl-cinza-texto">—</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    </div>
+                    <div className="overflow-x-auto -mx-2">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="text-[10px] uppercase tracking-wider text-cl-cinza-texto">
+                            <th className="text-left px-2 py-1.5">Comanda</th>
+                            <th className="text-left px-2 py-1.5">Cliente</th>
+                            <th className="text-center px-2 py-1.5">Palpite</th>
+                            <th className="text-right px-2 py-1.5">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {u.palpites.map((p, i) => (
+                            <tr
+                              key={`${p.criado_em}-${i}`}
+                              className="border-t border-cl-verde/10 align-middle"
+                            >
+                              <td className="px-2 py-2">
+                                <span className="inline-flex items-center justify-center min-w-9 h-8 px-2 rounded-lg bg-cl-verde-escuro text-white font-display tabular-nums">
+                                  {p.comanda ?? "—"}
+                                </span>
+                              </td>
+                              <td className="px-2 py-2 min-w-0">
+                                <p className="text-cl-verde-escuro truncate max-w-[140px]">
+                                  {p.nome ?? "—"}
+                                </p>
+                                <p className="text-[10px] text-cl-cinza-texto truncate">
+                                  {mascararTelefoneBR(p.telefone)}
+                                </p>
+                              </td>
+                              <td className="px-2 py-2 text-center font-display tabular-nums text-cl-verde-escuro whitespace-nowrap">
+                                {p.time_a ?? "?"} {p.placar_a ?? "-"} x{" "}
+                                {p.placar_b ?? "-"} {p.time_b ?? "?"}
+                              </td>
+                              <td className="px-2 py-2 text-right">
+                                {p.acertou ? (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-cl-verde-escuro bg-cl-laranja px-2 py-0.5 rounded-full">
+                                    <Trophy className="size-3" /> Acertou
+                                  </span>
+                                ) : (
+                                  <span className="text-[11px] text-cl-cinza-texto">
+                                    —
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
         </div>
       )}
     </section>
