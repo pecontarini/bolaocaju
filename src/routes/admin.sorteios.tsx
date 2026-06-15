@@ -1,13 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, Trophy, Loader2 } from "lucide-react";
+import { ChevronDown, Trophy, Loader2, FileDown } from "lucide-react";
 
 import { AdminShell, PageHeader } from "@/components/admin/AdminShell";
 import { Bandeira } from "@/components/jogos/Bandeira";
 import { supabase } from "@/integrations/supabase/client";
 import { useMarcaId } from "@/lib/marca";
 import { usePerfilAdmin } from "@/lib/admin/perfil";
+import { useBranding } from "@/lib/marca";
+import { Button } from "@/components/ui/button";
+import {
+  exportarGanhadoresCSV,
+  exportarGanhadoresPDF,
+} from "@/lib/admin/export-ganhadores";
 import {
   formatarDataHoraBR,
   mascararTelefoneBR,
@@ -89,6 +95,7 @@ function ItemJogo({ jogo }: { jogo: JogoEncerrado }) {
   const [aberto, setAberto] = useState(false);
   const perfilQ = usePerfilAdmin();
   const perfil = perfilQ.data ?? null;
+  const branding = useBranding();
 
   const ganhadoresQ = useQuery({
     queryKey: ["admin", "meus-ganhadores", jogo.id, perfil?.papel ?? null, perfil?.unidade_id ?? null],
@@ -175,6 +182,7 @@ function ItemJogo({ jogo }: { jogo: JogoEncerrado }) {
             </p>
           ) : ehGeral && grupos ? (
             <>
+              <BotoesExport jogo={jogo} lista={lista} branding={branding} />
               <div className="rounded-xl bg-cl-laranja text-cl-verde-escuro px-3 py-2 text-center mb-3">
                 <p className="text-[10px] uppercase tracking-widest font-semibold">
                   Chopps servidos
@@ -209,6 +217,7 @@ function ItemJogo({ jogo }: { jogo: JogoEncerrado }) {
             </>
           ) : (
             <>
+              <BotoesExport jogo={jogo} lista={lista} branding={branding} />
               <div className="rounded-xl bg-cl-laranja text-cl-verde-escuro px-3 py-2 text-center mb-3">
                 <p className="text-[10px] uppercase tracking-widest font-semibold">
                   Chopps servidos
