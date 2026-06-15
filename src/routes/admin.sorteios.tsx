@@ -259,3 +259,47 @@ function LinhaGanhadorJ({ g }: { g: GanhadorLinha }) {
     </li>
   );
 }
+
+function BotoesExport({
+  jogo,
+  lista,
+  branding,
+}: {
+  jogo: JogoEncerrado;
+  lista: GanhadorLinha[];
+  branding: { nomeExibicao: string; logoSrc: string };
+}) {
+  const dados = lista.map((g) => ({
+    comanda: g.comanda,
+    clientes: g.clientes,
+    marca_slug: g.marca_slug,
+    unidade_nome: g.unidade_nome,
+  }));
+  return (
+    <div className="flex gap-2 mb-3">
+      <Button
+        variant="outline"
+        size="sm"
+        className="flex-1"
+        onClick={() => exportarGanhadoresCSV(jogo, dados)}
+      >
+        <FileDown className="size-4" />
+        Exportar CSV
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        className="flex-1"
+        onClick={() =>
+          exportarGanhadoresPDF(jogo, dados, {
+            nomeExibicao: branding.nomeExibicao,
+            logoSrc: branding.logoSrc,
+          })
+        }
+      >
+        <FileDown className="size-4" />
+        Exportar PDF
+      </Button>
+    </div>
+  );
+}
