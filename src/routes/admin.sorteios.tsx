@@ -13,6 +13,9 @@ import { Button } from "@/components/ui/button";
 import {
   exportarGanhadoresCSV,
   exportarGanhadoresPDF,
+  exportarTodosGanhadoresCSV,
+  exportarTodosGanhadoresPDF,
+  type JogoComGanhadores,
 } from "@/lib/admin/export-ganhadores";
 import {
   formatarDataHoraBR,
@@ -43,6 +46,8 @@ function GanhadoresPage() {
   const marcaId = useMarcaId();
   const perfilQ = usePerfilAdmin();
   const ehGeral = perfilQ.data?.papel === "admin_geral";
+  const branding = useBranding();
+  const [exportando, setExportando] = useState<null | "csv" | "pdf">(null);
   const q = useQuery({
     queryKey: ["admin", "ganhadores-jogos", ehGeral ? "all" : marcaId],
     enabled: ehGeral || !!marcaId,
@@ -60,12 +65,80 @@ function GanhadoresPage() {
     },
   });
 
+  async function exportarTodos(formato: "csv" | "pdf") {
+    if (!q.data || q.data.length === 0) return;
+    setExportando(formato);
+    try {
+      const itens: JogoComGanhadores[] = [];
+      for (const jogo of q.data) {
+        const { data, error } = await supabase.rpc("fn_meus_ganhadores", {
+          p_jogo_id: jogo.id,
+        });
+        if (error) throw error;
+        const lista = ((data ?? []) as Array<{
+          nome: string | null;
+          telefone: string | null;
+          comanda: number | null;
+          marca_slug: string | null;
+          unidade_nome: string | null;
+        }>).map((r) => ({
+          comanda: r.comanda,
+          clientes: { nome: r.nome, telefone: r.telefone },
+          marca_slug: r.marca_slug,
+          unidade_nome: r.unidade_nome,
+        }));
+        itens.push({ jogo, lista });
+      }
+      if (formato === "csv") exportarTodosGanhadoresCSV(itens);
+      else
+        await exportarTodosGanhadoresPDF(itens, {
+          nomeExibicao: branding.nomeExibicao,
+          logoSrc: branding.logoSrc,
+        });
+    } finally {
+      setExportando(null);
+    }
+  }
+
   return (
     <>
       <PageHeader
         titulo="Ganhadores"
         subtitulo="Comandas que acertaram o placar no tempo regular."
       />
+
+      {q.data && q.data.length > 0 && (
+        <div className="flex gap-2 mb-3">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            disabled={exportando !== null}
+            onClick={() => exportarTodos("csv")}
+          >
+            {exportando === "csv" ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <FileDown className="size-4" />
+            )}
+            Exportar todos (CSV)
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            disabled={exportando !== null}
+            onClick={() => exportarTodos("pdf")}
+          >
+            {exportando === "pdf" ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <FileDown className="size-4" />
+            )}
+            Exportar todos (PDF)
+          </Button>
+        </div>
+      )}
 
       {q.isLoading ? (
         <div className="glass rounded-2xl h-64 animate-pulse" />
