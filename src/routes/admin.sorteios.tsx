@@ -18,6 +18,11 @@ import {
   type JogoComGanhadores,
 } from "@/lib/admin/export-ganhadores";
 import {
+  exportarParticipantesCSV,
+  exportarParticipantesPDF,
+  type ParticipanteExport,
+} from "@/lib/admin/export-participantes";
+import {
   formatarDataHoraBR,
   mascararTelefoneBR,
 } from "@/lib/admin/jogo-helpers";
@@ -48,6 +53,7 @@ function GanhadoresPage() {
   const ehGeral = perfilQ.data?.papel === "admin_geral";
   const branding = useBranding();
   const [exportando, setExportando] = useState<null | "csv" | "pdf">(null);
+  const [exportandoPart, setExportandoPart] = useState<null | "csv" | "pdf">(null);
   const q = useQuery({
     queryKey: ["admin", "ganhadores-jogos", ehGeral ? "all" : marcaId],
     enabled: ehGeral || !!marcaId,
@@ -100,6 +106,25 @@ function GanhadoresPage() {
     }
   }
 
+  async function exportarParticipantes(formato: "csv" | "pdf") {
+    setExportandoPart(formato);
+    try {
+      const { data, error } = await supabase.rpc("fn_palpites_admin", {
+        p_jogo_id: null,
+      });
+      if (error) throw error;
+      const lista = ((data ?? []) as unknown) as ParticipanteExport[];
+      if (formato === "csv") exportarParticipantesCSV(lista);
+      else
+        await exportarParticipantesPDF(lista, {
+          nomeExibicao: branding.nomeExibicao,
+          logoSrc: branding.logoSrc,
+        });
+    } finally {
+      setExportandoPart(null);
+    }
+  }
+
   return (
     <>
       <PageHeader
@@ -139,6 +164,37 @@ function GanhadoresPage() {
           </Button>
         </div>
       )}
+
+      <div className="flex gap-2 mb-4">
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1"
+          disabled={exportandoPart !== null}
+          onClick={() => exportarParticipantes("csv")}
+        >
+          {exportandoPart === "csv" ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <FileDown className="size-4" />
+          )}
+          Participantes (CSV)
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1"
+          disabled={exportandoPart !== null}
+          onClick={() => exportarParticipantes("pdf")}
+        >
+          {exportandoPart === "pdf" ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <FileDown className="size-4" />
+          )}
+          Participantes (PDF)
+        </Button>
+      </div>
 
       {q.isLoading ? (
         <div className="glass rounded-2xl h-64 animate-pulse" />
