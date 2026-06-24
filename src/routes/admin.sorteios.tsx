@@ -109,11 +109,19 @@ function GanhadoresPage() {
   async function exportarParticipantes(formato: "csv" | "pdf") {
     setExportandoPart(formato);
     try {
-      const { data, error } = await supabase.rpc("fn_palpites_admin", {
-        p_jogo_id: null,
-      });
-      if (error) throw error;
-      const lista = ((data ?? []) as unknown) as ParticipanteExport[];
+      const PAGE = 1000;
+      let offset = 0;
+      const lista: ParticipanteExport[] = [];
+      while (true) {
+        const { data, error } = await supabase
+          .rpc("fn_palpites_admin", { p_jogo_id: null })
+          .range(offset, offset + PAGE - 1);
+        if (error) throw error;
+        const lote = ((data ?? []) as unknown) as ParticipanteExport[];
+        lista.push(...lote);
+        if (lote.length < PAGE) break;
+        offset += PAGE;
+      }
       if (formato === "csv") exportarParticipantesCSV(lista);
       else
         await exportarParticipantesPDF(lista, {

@@ -1,40 +1,41 @@
-## Objetivo
-Na aba admin `/admin/sorteios` (Ganhadores), adicionar, dentro de cada jogo expandido, dois botões: **Exportar PDF** e **Exportar CSV**, contendo todos os ganhadores daquele jogo, agrupados por marca e unidade.
+## Problema
 
-## Escopo
-- Apenas tela `src/routes/admin.sorteios.tsx` (componente `ItemJogo`).
-- Usa os dados já carregados via `fn_meus_ganhadores(p_jogo_id)` — sem mudar RPC nem backend.
-- Admin geral → exporta de todas as marcas/unidades visíveis; gerente → apenas da unidade dele (a RPC já filtra).
+A RPC `fn_palpites_admin` é chamada uma única vez no botão "Participantes (CSV/PDF)" e o PostgREST/Supabase aplica um limite padrão de 1000 linhas por resposta. Resultado: o CSV sai truncado quando há mais de 1000 palpites.
 
-## CSV
-- Nome do arquivo: `ganhadores-jogo-{numero_jogo}-{TIMEA}x{TIMEB}.csv`.
-- Separador `;` (padrão BR para abrir no Excel), UTF-8 com BOM.
-- Cabeçalho: `Marca;Unidade;Comanda;Nome;Telefone;Placar;Jogo;Data`.
-- Uma linha por ganhador. Telefone em formato cru (sem máscara) para facilitar contato.
-- Geração client-side com `Blob` + link `download`. Sem libs novas.
+## Solução
 
-## PDF
-- Geração client-side com `jspdf` + `jspdf-autotable` (adicionar como dependências).
-- Identidade visual da marca atual via `useBranding()`:
-  - Logo no topo (carregado de `logoSrc`, convertido para dataURL antes de adicionar).
-  - Cor primária (`--cl-verde` resolvida via `getComputedStyle`) na faixa do cabeçalho e nos headers das tabelas.
-  - Nome de exibição da marca no título: "Bolão {nomeExibicao} — Ganhadores".
-- Conteúdo:
-  - Cabeçalho: logo + título + subtítulo com placar final (`TIMEA X x Y TIMEB`), número do jogo e data/hora (`formatarDataHoraBR`).
-  - Resumo: total de comandas ganhadoras.
-  - Para admin geral: uma seção por marca (slug em destaque) e, dentro, subseção por unidade com tabela (Comanda, Nome, Telefone).
-  - Para gerente: uma única tabela (Comanda, Nome, Telefone) com o nome da unidade no subtítulo.
-  - Rodapé com numeração de página e data de emissão.
-- Nome do arquivo: `ganhadores-jogo-{numero_jogo}.pdf`.
+Paginar a chamada no cliente até esgotar os resultados, em vez de confiar em um único retorno.
 
-## UI
-- Dois botões `Button` (variant `outline`, size `sm`) lado a lado, acima da caixa "Chopps servidos", visíveis somente quando `lista.length > 0`.
-- Ícones `FileDown` (lucide) já disponível.
-- Desabilitados enquanto `ganhadoresQ.isLoading`.
+### Passos
 
-## Detalhes técnicos
-- Novo módulo `src/lib/admin/export-ganhadores.ts` exportando `exportarGanhadoresCSV(jogo, lista)` e `exportarGanhadoresPDF(jogo, lista, branding)`.
-- Carregar logo como dataURL via `fetch(logoSrc).then(r => r.blob()).then(...FileReader)` — fallback silencioso se falhar (PDF sai sem logo).
-- Resolver cor primária a partir de `getComputedStyle(document.documentElement).getPropertyValue('--cl-verde')`.
-- Dependências novas: `jspdf`, `jspdf-autotable` (instalar via `bun add` antes de importar).
-- Sem alterações em rotas, RPCs, RLS, ou outras telas.
+1. **`src/routes/admin.sorteios.tsx` — função `exportarParticipantes`**
+   - Substituir a chamada única por um loop que busca em lotes de 1000 usando `.range(offset, offset + 999)` sobre a RPC:
+     ```ts
+     const PAGE = 1000;
+     let offset = 0;
+     const todos: ParticipanteExport[] = [];
+     while (true) {
+       const { data, error } = await supabase
+         .rpc("fn_palpites_admin", { p_jogo_id: null })
+         .range(offset, offset + PAGE - 1);
+       if (error) throw error;
+       const lote = (data ?? []) as ParticipanteExport[];
+       todos.push(...lote);
+       if (lote.length < PAGE) break;
+       offset += PAGE;
+     }
+     ```
+   - Passar `todos` para `exportarParticipantesCSV` / `exportarParticipantesPDF`.
+
+2. **Feedback opcional**: manter o `Loader2` enquanto pagina (já existe via `exportandoPart`).
+
+3. **Não alterar a RPC** nem mexer em `fn_meus_ganhadores` — ganhadores são poucos por jogo e não estouram o limite. Se quiser, posso aplicar a mesma paginação preventiva no "Exportar todos (ganhadores)", mas só se você confirmar.
+
+### Por que paginar no cliente
+
+- PostgREST tem `max-rows` configurado no projeto Supabase e não pode ser sobrescrito pelo front via header simples.
+- `.range()` em cima de `.rpc()` é suportado e é a forma idiomática de iterar além do limite, sem mudanças no backend.
+
+### Arquivos tocados
+
+- `src/routes/admin.sorteios.tsx` (apenas a função `exportarParticipantes`)
